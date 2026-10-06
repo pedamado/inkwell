@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// INKWELL 17 — hand input for 17d (the caregiver / able-bodied variant): one hand, seen by the webcam
+// INKWELL 18 — hand input for 18d (the caregiver / able-bodied variant): one hand, seen by the webcam
 //   Model    MediaPipe HandLandmarker (tasks-vision PINNED 0.10.35, as InkGaze: 0.10.x sends no usage telemetry),
 //            VIDEO mode, up to two hands (the one in use is kept), GPU with a CPU fallback
 //   Cursor   the INDEX FINGERTIP, from a reach box in the mirrored camera view to the whole screen (the menu, the
@@ -200,7 +200,7 @@ export class HandInput {
   // on: { status, pose(p, prev), wave(), tap({x, y}), reach(box | null), frame(this) }
   constructor({ cfg, on = {} }) {
     this.cfg = cfg; this.on = on;
-    this.state = 'idle'; this.delegate = ''; this.fps = 0;
+    this.state = 'idle'; this.delegate = ''; this.fps = 0; this.cameras = [];   // 18: [{deviceId, label}] once allowed
     this.video = null; this.stream = null; this.lm = null;
     this.fx = new OneEuro(); this.fy = new OneEuro(); this.wave = new WaveDetector(); this.pull = new PullDetector();
     this._vote = 0; this._pullT = -1e9;   // the hand's left / right, voted over frames (one misread frame never flips it)
@@ -224,13 +224,17 @@ export class HandInput {
       const md = navigator.mediaDevices;
       if (!md || !md.getUserMedia) { this._status('nocamera'); return false; }
       this._status('camera');
+      // 18: this window's camera (cfg.handCameraId) — two windows, two webcams; a camera that is gone falls back to the default
+      const base = { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } }, want = this.cfg.handCameraId;
       try {
-        this.stream = await md.getUserMedia({ audio: false, video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 }, facingMode: 'user' } });
+        try { this.stream = await md.getUserMedia({ audio: false, video: want ? Object.assign({ deviceId: { exact: want } }, base) : Object.assign({ facingMode: 'user' }, base) }); }
+        catch (e) { if (!want || !e || (e.name !== 'OverconstrainedError' && e.name !== 'NotFoundError' && e.name !== 'NotReadableError')) throw e; this.stream = await md.getUserMedia({ audio: false, video: Object.assign({ facingMode: 'user' }, base) }); }
       } catch (e) {
         const n = e && e.name;
         this._status(n === 'NotAllowedError' || n === 'SecurityError' ? 'denied' : n === 'NotFoundError' || n === 'OverconstrainedError' ? 'nocamera' : 'error', { reason: (e && e.message) || String(e) });
         return false;
       }
+      try { this.cameras = (await md.enumerateDevices()).filter((d) => d.kind === 'videoinput').map((d) => ({ deviceId: d.deviceId, label: d.label || '' })); } catch (e) { this.cameras = []; }
       const track = this.stream.getVideoTracks()[0];
       if (track) track.addEventListener('ended', () => { if (this.stream && this.stream.getVideoTracks()[0] === track) { this.stop(); this._status('error', { reason: 'the camera was disconnected or stopped by the system' }); } });
       const v = this._ensureVideo();
@@ -293,6 +297,7 @@ export class HandInput {
     if (this.running || ['camera', 'model'].includes(this.state)) this._status('idle');
   }
   destroy() { this.stop(); if (this.lm) { try { this.lm.close(); } catch (e) { /* closed */ } this.lm = null; } if (this.video) { this.video.remove(); this.video = null; } }
+  async restart() { this.stop(); return this.start(); }   // 18: another camera (the model stays loaded)
 
   // ------------------------------------------------------------------------------------------ the per-frame pipeline
   // one HandLandmarker result ({landmarks, worldLandmarks}); synthetic results work the same (tests)

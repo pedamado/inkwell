@@ -1,20 +1,27 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// INKWELL 17 — the 2D app: 17a (InkGaze webcam eye tracker), 17b (mouse cursor) and 17d (hand gestures, webcam)
-//   Flow     17a: InkGaze takes over (its settings: Start / Resume → calibration or a saved one) · 17b: Start ·
-//            17d: Start the camera → the hand is found (→ calibrate the reach, the first time) → Continue
+// INKWELL 18 — the 2D app: 18a (InkGaze webcam eye tracker), 18b (mouse cursor) and 18d (hand gestures, webcam)
+//   Flow     18a: InkGaze takes over (its settings: Start / Resume → calibration or a saved one) · 18b: Start ·
+//            18d: Start the camera → the hand is found (→ calibrate the reach, the first time) → Continue
 //            → three dots (look until each pops) → splash (play · About · Help · Configurations) → the studio
-//   Input    InkGaze's data stream. 17b runs InkGaze's MOUSE source: the pointer becomes the "gaze" with the same
+//   Input    InkGaze's data stream. 18b runs InkGaze's MOUSE source: the pointer becomes the "gaze" with the same
 //            states, saccades and escape saccades, so both variants share every interaction behaviour.
-//            17d (hands.js): the index fingertip is the cursor while a hand POINTS (a fist or an open hand never
+//            18d (hands.js): the index fingertip is the cursor while a hand POINTS (a fist or an open hand never
 //            presses or inks); finger poses arm Draw mode and set the thickness, the thumb calls 1–5 random agents,
 //            a fist rests (17.1: the line stops the moment the finger folds), an open-palm wave opens Clear Drawing,
 //            the back of the hand pulled toward you undoes (17.1), a finger tap clicks. Dwells work as with the eyes.
-//   Studio   #paper (the surface canvas itself, panned with CSS) · #overlay (grid, agents, menu, reticle, on top of
-//            everything, pointer-events: none) · #screens (DOM screens) · the Configuration layer
+//   Studio   #paper (the paper, this person's layer — a transparent Surface — and the partners' layers, panned with
+//            CSS) · #overlay (grid, agents, menu, reticle, the partners' cursors; on top of everything,
+//            pointer-events: none) · #screens (DOM screens) · the Configuration layer
+//   Shared   (18, share.js) the windows of this browser in the same room draw together: each person's ink goes to the
+//            others as marks (and as a whole layer after undo / redo / clear / open); cursors and settings are shared;
+//            the oldest window sets the drawing's proportions (the others fit it, letterboxed); Configuration can show
+//            and change a partner's settings (a carer tuning the eye-tracking person's setup, live).
 // ═══════════════════════════════════════════════════════════════════════════
 import {
-  VERSION, VARIANTS, TK, loadSettings, saveSettings, defaultsFor, settingsKey, storage, deepMerge, setPath, clamp, withAlpha, unlockAudio,
+  VERSION, BUILD_NO, VARIANTS, TK, COLORS, SEAT, seatSuffix, loadSettings, saveSettings, defaultsFor, settingsKey, storage, deepMerge, setPath, clamp, withAlpha, unlockAudio,
 } from './core.js';
+import { Share, shareSupported } from './share.js';
+import { paintMarks } from './marks.js';
 import { Surface } from './surface.js';
 import { Engine } from './engine.js';
 import * as HUD from './hud.js';
@@ -22,7 +29,7 @@ import { GazeDom, toast, showGate, showIntro, showSplash, showAbout, showHelp, o
 import { t, has, onLanguage, setLanguage, langMeta } from './i18n.js';
 import { saveSession, recentSessions, pickSessionFile, parseSession, applySession } from './sessions.js';
 
-const THICK_BY_N = { 1: 'thin', 2: 'medium', 3: 'thick' };   // 17d: fingers pointing → line thickness
+const THICK_BY_N = { 1: 'thin', 2: 'medium', 3: 'thick' };   // 18d: fingers pointing → line thickness
 
 export function runApp2D(variant) {
   const isA = variant.id === 'a', isD = variant.id === 'd';
@@ -40,9 +47,12 @@ export function runApp2D(variant) {
     ghost: { x: 0, y: 0 }, pan: { x: 0, y: 0 }, panKey: '', space: false, drag: false,
     cfgUI: null, page: null, orbit: null, reach: null, lastFrame: performance.now(), lastClearTap: -1e9, recentreHinted: false,
   };
-  // 17d: the hand tracker (hands.js, loaded on Start) and what the app keeps of it
+  // 18d: the hand tracker (hands.js, loaded on Start) and what the app keeps of it
   let hands = null, HM = null, camEl = null;
   const HS = { status: 'idle', reason: '', present: false, pointing: false, thumb: false, chip: null, seenT: 0 };
+  // 18: the shared drawing — the room, the paper under the layers, the partners' layers, the room's proportions
+  let share = null;
+  const SH = { aspect: null, world: null, layers: new Map(), noticeT: 0, cfgT: 0, cmdT: 0 };
   document.body.classList.add('v-' + variant.id);
 
   // ---------------------------------------------------------------------------------------------- canvases + surface
@@ -52,32 +62,68 @@ export function runApp2D(variant) {
     overlay.style.width = W + 'px'; overlay.style.height = H + 'px';
     L = HUD.layout(W, H, cfg);
   }
-  function buildSurface(keep) {
+  // the drawing's size: the window — or, shared (18), the room's proportions fitted in the window (letterboxed)
+  function worldSize() {
     const ws = cfg.panEnabled ? cfg.worldScale : 1;
+    let w = W, h = H;
+    if (SH.aspect) { if (W / H > SH.aspect) w = H * SH.aspect; else h = W / SH.aspect; }
+    return { w: w * ws, h: h * ws };
+  }
+  function buildSurface(keep) {
+    const { w, h } = worldSize();
     if (engine) { engine.penUp('resize'); engine.endGridLine(); }
-    const s = new Surface({ width: W * ws, height: H * ws, scale: DPR });
+    const s = new Surface({ width: w, height: h, scale: DPR, bg: null });   // 18: a transparent layer over the paper
     if (keep) s.copyFrom(keep);
     surface = s;
     const cv = s.tiles[0].canvas;
-    cv.style.width = s.width + 'px'; cv.style.height = s.height + 'px';
-    paperHost.replaceChildren(cv);
+    cv.style.width = s.width + 'px'; cv.style.height = s.height + 'px'; cv.className = 'layer mine';
+    if (!SH.world) { SH.world = document.createElement('div'); SH.world.className = 'world'; }
+    SH.world.style.width = s.width + 'px'; SH.world.style.height = s.height + 'px';
+    paperHost.replaceChildren(SH.world, cv);
+    for (const ly of SH.layers.values()) { sizeLayer(ly); paperHost.append(ly.cv); }
+    stackLayers();
     A.pan = { x: (s.width - W) / 2, y: (s.height - H) / 2 }; A.panKey = '';
+    document.body.classList.toggle('letterbox', s.width < W - 1 || s.height < H - 1);
     if (engine) engine.surface = s;
+    if (share && share.active && SH.layers.size) for (const id of SH.layers.keys()) share.need(id);   // their ink again, at the new size
   }
   function placePaper() {
     const key = Math.round(A.pan.x) + ',' + Math.round(A.pan.y);
     if (key === A.panKey) return;
-    A.panKey = key; paperHost.firstChild.style.transform = `translate(${-Math.round(A.pan.x)}px, ${-Math.round(A.pan.y)}px)`;
+    A.panKey = key;
+    const tr = `translate(${-Math.round(A.pan.x)}px, ${-Math.round(A.pan.y)}px)`;
+    for (const el of paperHost.children) el.style.transform = tr;
   }
-  function panBy(dx, dy) {
-    A.pan.x = clamp(A.pan.x + dx, 0, Math.max(0, surface.width - W));
-    A.pan.y = clamp(A.pan.y + dy, 0, Math.max(0, surface.height - H));
+  function panBy(dx, dy) {   // a drawing smaller than the window (letterboxed) stays centred
+    A.pan.x = surface.width <= W ? (surface.width - W) / 2 : clamp(A.pan.x + dx, 0, surface.width - W);
+    A.pan.y = surface.height <= H ? (surface.height - H) / 2 : clamp(A.pan.y + dy, 0, surface.height - H);
+  }
+  // the partners' layers: one canvas each, the size of this window's surface, stacked oldest first (as everywhere)
+  function layerFor(p) {
+    let ly = SH.layers.get(p.id);
+    if (ly) return ly;
+    const cv = document.createElement('canvas'); cv.className = 'layer'; cv.setAttribute('aria-hidden', 'true');
+    ly = { cv, ctx: cv.getContext('2d'), wait: null, queue: [] };
+    sizeLayer(ly); SH.layers.set(p.id, ly); paperHost.append(cv); stackLayers();
+    return ly;
+  }
+  function sizeLayer(ly) {
+    ly.cv.width = Math.round(surface.width * DPR); ly.cv.height = Math.round(surface.height * DPR);
+    ly.cv.style.width = surface.width + 'px'; ly.cv.style.height = surface.height + 'px'; A.panKey = '';
+  }
+  function dropLayer(id) { const ly = SH.layers.get(id); if (ly) { ly.cv.remove(); SH.layers.delete(id); } }
+  function stackLayers() {
+    const order = share && share.active ? share.members().map((m) => m.id) : [];
+    const z = (id) => 1 + Math.max(0, order.indexOf(id));
+    if (surface) surface.tiles[0].canvas.style.zIndex = share ? z(share.id) : 1;
+    for (const [id, ly] of SH.layers) ly.cv.style.zIndex = z(id);
+    A.panKey = '';
   }
   const recentrePan = () => { A.pan = { x: (surface.width - W) / 2, y: (surface.height - H) / 2 }; };
 
   // ---------------------------------------------------------------------------------------------- settings
   let saveT = 0;
-  function persist() { clearTimeout(saveT); saveT = setTimeout(() => saveSettings(variant, cfg), 250); }
+  function persist() { clearTimeout(saveT); saveT = setTimeout(() => saveSettings(variant, cfg), 250); publishCfg(); }
   function agentsToCfg() { cfg.agents = engine.S.boids.map((b) => b.props()); cfg.boidCount = cfg.agents.length; }
   function onCfgChange(k, v) {
     if (v !== undefined && k !== 'boids' && k !== 'preset') setPath(cfg, k, v);
@@ -90,6 +136,11 @@ export function runApp2D(variant) {
     else if (k === 'panEnabled' || k === 'worldScale') buildSurface(surface);
     else if (k === 'hitPad') L = HUD.layout(W, H, cfg);
     else if (k === 'ppd') engine.ppd = v;
+    else if (k === 'shareOn') { if (v) startShare(); else stopShare(); }
+    else if (k === 'shareRoom') { if (share) { stopShare(); startShare(); } }
+    else if (k === 'shareName') { if (share) share.announce(); }
+    else if (k === 'handCameraId') { if (hands && hands.running) hands.restart(); }
+    if (k === 'color' && share) share.announce();
     if (k === 'boids' || k === 'preset') agentsToCfg();
     persist();
   }
@@ -104,13 +155,143 @@ export function runApp2D(variant) {
     persist();
   }
 
+  // ---------------------------------------------------------------------------------------------- the shared drawing (18)
+  const myName = () => (cfg.shareName || '').trim() || t('variant.' + variant.id);
+  const shareInfo = () => ({ variant: variant.id, seat: SEAT, name: myName(), color: cfg.color, aspect: SH.aspect || W / H });
+  const peerColour = (info) => { const hex = (COLORS[info && info.color] || COLORS.black).hex; return hex === '#ffffff' ? TK.muted : hex; };
+  const peerLabel = (info) => (info.name || t('variant.' + info.variant)) + ' · ' + BUILD_NO + info.variant + (info.seat > 1 ? ' (' + info.seat + ')' : '');
+  function startShare() {
+    if (share || !cfg.shareOn || !shareSupported()) return;
+    share = new Share({ room: (cfg.shareRoom || 'studio').trim() || 'studio', info: shareInfo, on: {
+      peer: onPeer, ink: onPeerInk, layer: onPeerLayer, need: (p) => sendLayer(p.id), cfg: onPeerCfg, set: onRemoteSet, cmd: onRemoteCmd,
+      clearall: () => engine.clear(),
+    } });
+    share.start();
+  }
+  function stopShare() {
+    if (!share) return;
+    share.stop(); share = null;
+    for (const id of [...SH.layers.keys()]) dropLayer(id);
+    stackLayers();
+    if (A.cfgTarget) { A.cfgTarget = null; reopenConfig(); }
+  }
+  function onPeer(p, kind) {
+    if (kind === 'join') {
+      fixAspect();
+      layerFor(p);
+      share.need(p.id);   // its drawing so far
+      publishCfg(true);   // my settings, for its configuration
+      colourCheck();
+      toast(t('toast.joined', { name: peerLabel(p.info) }), 3800);
+      if (p.info.variant === variant.id && (p.info.seat || 1) === SEAT) toast(t('toast.sameSeat', { variant: BUILD_NO + variant.id, seat: SEAT + 1 }), 9000);
+    } else if (kind === 'leave') {
+      dropLayer(p.id);
+      toast(t('toast.left', { name: peerLabel(p.info) }), 3800);
+      if (A.cfgTarget === p.id) { A.cfgTarget = null; reopenConfig(); }
+    }
+    stackLayers();
+    if (kind !== 'update' && A.cfgUI && !A.cfgTarget) refreshConfig();   // the people listed in Configuration
+  }
+  // the oldest window sets the drawing's proportions for the room; the others fit them (once set, kept)
+  function fixAspect() {
+    if (SH.aspect || !share) return;
+    const oldest = share.members()[0];
+    SH.aspect = oldest.id === share.id ? W / H : (oldest.aspect || W / H);
+    share.announce();
+    if (Math.abs(SH.aspect - surface.width / surface.height) > 0.004) { buildSurface(surface); sendLayer(); }
+  }
+  // two people, two colours: a newcomer whose colour an older window already uses takes the first free one
+  function colourCheck() {
+    if (!share) return;
+    const mine = share.me(), taken = new Set(share.members().filter((m) => m.id !== mine.id && m.joinedAt <= mine.joinedAt).map((m) => m.color));
+    if (!taken.has(cfg.color)) return;
+    const free = ['black', 'red', 'blue'].find((c) => !taken.has(c));
+    if (!free) return;
+    onCfgChange('color', free);
+    toast(t('toast.colour', { color: t('hud.color.' + free) }), 4200);
+  }
+  function onPeerInk(p, Wa, marks) {
+    const ly = layerFor(p);
+    if (ly.wait) { ly.queue.push([Wa, marks]); return; }   // a layer image is still being decoded: after it
+    paintMarks(ly.ctx, marks, surface.width / (Wa || surface.width), DPR);
+  }
+  async function onPeerLayer(p, Wa, img) {
+    const ly = layerFor(p);
+    let bmp = img;
+    if (!(img instanceof ImageBitmap)) {
+      ly.wait = createImageBitmap(img);
+      try { bmp = await ly.wait; } catch (e) { bmp = null; }
+      ly.wait = null;
+    }
+    const c = ly.ctx;
+    c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, ly.cv.width, ly.cv.height);
+    if (bmp) { c.drawImage(bmp, 0, 0, ly.cv.width, ly.cv.height); try { bmp.close(); } catch (e) { /* done */ } }
+    for (const [w, marks] of ly.queue.splice(0)) paintMarks(c, marks, surface.width / (w || surface.width), DPR);
+  }
+  function sendLayer(to = null) { if (share && share.active) share.layer(surface.tiles[0].canvas, surface.width, to); }
+  // my settings for the others' Configuration (+ the eye tracker's or the hand tracker's status)
+  function publishCfg(now = false) {
+    if (!share || !share.active) return;
+    clearTimeout(SH.cfgT);
+    const send = () => {
+      const extra = { key: variant.key + seatSuffix };
+      if (isA && ig) { try { const q = ig.quality() || {}, rt = q.runtime || {}; extra.tracker = { calibrated: !!q.calibrated, points: q.points || 0, model: q.model || '', fps: Math.round(rt.fps || 0) }; } catch (e) { /* not ready */ } }
+      if (isD) extra.hands = { running: !!(hands && hands.running), fps: hands ? Math.round(hands.fps || 0) : 0, delegate: hands ? hands.delegate : '', cameras: hands ? hands.cameras : [] };
+      share.cfg(JSON.parse(JSON.stringify(cfg)), extra);
+    };
+    if (now) send(); else SH.cfgT = setTimeout(send, 100);
+  }
+  function onPeerCfg(p) {   // a partner's settings changed: refresh its Configuration if it is open here
+    if (!A.cfgUI || A.cfgTarget !== p.id) return;
+    const n = Array.isArray(p.cfg.agents) ? p.cfg.agents.length : 0;
+    if (n !== A.cfgAgents || performance.now() - SH.cmdT < 1500) refreshConfig(); else A.cfgUI.sync();
+  }
+  // a partner changes one of my settings (never the room itself: that would end the shared drawing)
+  const REMOTE_BLOCK = new Set(['shareOn', 'shareRoom', 'agents', 'handBox']);
+  function onRemoteSet(k, v, p) {
+    if (REMOTE_BLOCK.has(k) || typeof k !== 'string') return;
+    onCfgChange(k, v);
+    if (A.cfgUI && !A.cfgTarget) A.cfgUI.sync();
+    remoteNotice(p);
+  }
+  function onRemoteCmd(cmd, arg, p) {
+    const boids = () => { onCfgChange('boids'); if (A.cfgUI && !A.cfgTarget) refreshConfig(); };
+    switch (cmd) {
+      case 'preset': engine.applyPreset(arg); onCfgChange('preset', arg); if (A.cfgUI && !A.cfgTarget) refreshConfig(); break;
+      case 'agents': if (Array.isArray(arg)) arg.forEach((pr, i) => { const b = engine.S.boids[i]; if (b && pr) Object.assign(b, pr); }); boids(); break;
+      case 'addBoid': engine.addBoid(); boids(); break;
+      case 'removeBoid': engine.removeBoid(arg); boids(); break;
+      case 'randomizeBoid': engine.randomizeBoid(arg); boids(); break;
+      case 'resetBoid': engine.resetBoid(arg); boids(); break;
+      case 'randomizeAll': engine.randomizeAll(); boids(); break;
+      case 'reset': resetCfg(); break;
+      case 'clearSaved': storage.del(settingsKey(variant)); break;
+      case 'tracker': if (isA && ig) { if (arg === 'recenter') ig.recenter(); else if (arg === 'cal5') ig.calibrate({ layout: '5' }); else if (arg === 'cal9') ig.calibrate({ layout: '9' }); else if (arg === 'settings') ig.openSettings(); } break;
+      case 'reach': if (isD) openReach(); break;
+      case 'reachReset': if (isD) { cfg.handBox = null; persist(); } break;
+      case 'clear': engine.clear(); break;
+      default: return;
+    }
+    publishCfg(); remoteNotice(p);
+  }
+  function remoteNotice(p) {   // the person sees that someone tuned their setup (at most every 6 s)
+    const now = performance.now();
+    if (now - SH.noticeT < 6000) return;
+    SH.noticeT = now; toast(t('toast.remoteSet', { name: p.info.name || t('variant.' + p.info.variant) }), 3000);
+  }
+  function resetCfg() {   // defaults again — but the room, the name and this window's camera stay
+    const keep = { shareOn: cfg.shareOn, shareRoom: cfg.shareRoom, shareName: cfg.shareName, handCameraId: cfg.handCameraId, handBox: cfg.handBox };
+    replaceCfg(Object.assign(defaultsFor(variant), keep)); afterCfgSwap(null); buildSurface(surface); toast(t('toast.defaults'));
+    if (A.cfgUI && !A.cfgTarget) refreshConfig();
+  }
+
   // ---------------------------------------------------------------------------------------------- input (InkGaze)
   function startInput() {
     const IG = window.InkGaze;
     if (!IG) { toast(t('toast.libMissing'), 8000); return; }
     let devMouse = false; try { devMouse = new URLSearchParams(location.search).get('source') === 'mouse'; } catch (e) { /* no URL */ }
-    ig = isA   // 17a?source=mouse: InkGaze's own flow without a camera (development; nothing is saved to its settings)
-      ? new IG(Object.assign({ storageKey: 'inkwell17.inkgaze', escapeAmplitude: cfg.escapeAmplitude }, devMouse ? { source: 'mouse', persist: false } : {}))
+    ig = isA   // 18a?source=mouse: InkGaze's own flow without a camera (development; nothing is saved to its settings)
+      ? new IG(Object.assign({ storageKey: 'inkwell18.inkgaze' + seatSuffix, escapeAmplitude: cfg.escapeAmplitude }, devMouse ? { source: 'mouse', persist: false } : {}))
       : new IG({ source: 'mouse', ui: false, persist: false, smoothing: 0, rate: 60, escapeAmplitude: cfg.escapeAmplitude });
     ig.on('data', onData);
     ig.on('saccade', (s) => { if (s.escape && A.phase === 'studio' && !overlayOpen() && !A.paused) engine.escape(); });
@@ -133,7 +314,7 @@ export function runApp2D(variant) {
     A.lost = s.state === 'lost';
     A.paused = !['tracking', 'lost'].includes(s.state);
     if (isA && A.phase === 'gate' && gate) gateMessage(s);
-    if (isA && s.state === 'tracking' && A.phase === 'gate') goIntro();   // 17b waits for its Start
+    if (isA && s.state === 'tracking' && A.phase === 'gate') goIntro();   // 18b waits for its Start
   }
   function updateGaze(dt) {
     const r = A.raw; if (!r) return;
@@ -145,12 +326,12 @@ export function runApp2D(variant) {
     A.degS += (v - A.degS) * (1 - Math.exp(-dt / 70));
   }
   const live = () => !!A.gaze && !A.paused && A.state !== 'lost';
-  const aiming = () => live() && (!isD || HS.pointing);   // 17d: only a POINTING hand aims (dwells, inks)
+  const aiming = () => live() && (!isD || HS.pointing);   // 18d: only a POINTING hand aims (dwells, inks)
   const onScreen = (p) => ({ x: clamp(p.x, 0, W), y: clamp(p.y, 0, H) });
   function learn(x, y) { if (isA && ig) { try { ig.learn(x, y); } catch (e) { /* not calibrated */ } } }
   gaze.onFire = (el) => { const r = el.getBoundingClientRect(); learn(r.left + r.width / 2, r.top + r.height / 2); };
 
-  // ---------------------------------------------------------------------------------------------- input (hands, 17d)
+  // ---------------------------------------------------------------------------------------------- input (hands, 18d)
   async function ensureHands() {
     if (hands) return hands;
     HM = await import('./hands.js');
@@ -223,7 +404,7 @@ export function runApp2D(variant) {
     engine.undo();
     HS.chip = { text: t('hand.chip.undo'), t: performance.now(), undo: true };
   }
-  // a finger tap = a click where the tap began (as the mouse click in 17b)
+  // a finger tap = a click where the tap began (as the mouse click in 18b)
   function onHandTap(pt) {
     if (!pt || A.orbit || A.reach) return;
     if (A.phase === 'studio' && !overlayOpen()) {
@@ -291,7 +472,20 @@ export function runApp2D(variant) {
       mk(t('cfg.hands.calibrate'), () => { closeConfig(); openReach(); }, !!on),
       mk(t('cfg.hands.reset'), () => { cfg.handBox = null; persist(); toast(t('cfg.hands.resetDone')); reopenConfig(); }, !!cfg.handBox),
     );
-    box.append(info, row, Object.assign(document.createElement('p'), { className: 'hint', textContent: t('cfg.hands.help') }));
+    box.append(info, row);
+    // 18: two windows, two webcams — this window's camera (the names appear once a camera has been allowed)
+    const cams = hands && hands.cameras ? hands.cameras : [];
+    if (cams.length) {
+      const id = 'cfg-handCamera', sel = document.createElement('select'); sel.id = id;
+      sel.append(new Option(t('cfg.hands.cameraDefault'), ''));
+      cams.forEach((c, i) => sel.append(new Option(c.label || t('cfg.hands.cameraN', { n: i + 1 }), c.deviceId)));
+      sel.value = cfg.handCameraId || '';
+      sel.addEventListener('change', () => onCfgChange('handCameraId', sel.value));
+      const lab = document.createElement('label'); lab.htmlFor = id; lab.append(Object.assign(document.createElement('span'), { textContent: t('cfg.hands.camera') }));
+      const ctl = document.createElement('div'); ctl.className = 'ctl'; ctl.append(lab, sel);
+      box.append(ctl);
+    }
+    box.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: t('cfg.hands.help') }));
     return box;
   }
 
@@ -304,9 +498,11 @@ export function runApp2D(variant) {
         onOption: (b) => { if (b === 'save') doSave(); else if (b === 'open') doOpen(); else if (b === 'config') openConfigUI(); },
         onFileDwell: () => toast(t('toast.fileDwell'), 5200),
         onDwellDone: (id) => { const c = HUD.targetCentre(L, engine.S, id); if (c) learn(c.x, c.y); },
+        onInk: (m) => { if (share && share.active) share.ink(m, surface.width); },   // 18: my ink, to the others
+        onLayer: () => sendLayer(),                                                     // 18: undo / redo / clear
       },
     });
-    if (isD) cfg.boidCount = 0;   // 17d: the direct pen; the thumb calls the agents
+    if (isD) cfg.boidCount = 0;   // 18d: the direct pen; the thumb calls the agents
     engine.spawnBoids(!isD && Array.isArray(cfg.agents) && cfg.agents.length === cfg.boidCount ? cfg.agents : null);
     agentsToCfg();
     engine.S.target = { x: surface.width / 2, y: surface.height / 2 };
@@ -316,7 +512,7 @@ export function runApp2D(variant) {
   function goGate() {
     A.phase = 'gate';
     renderGate();
-    if (isD) return;   // 17d: the camera starts with the Start button
+    if (isD) return;   // 18d: the camera starts with the Start button
     startInput();
     if (!ig) return;
     if (isA) ig.init().then((ok) => { if (!ok && A.phase === 'gate') gateMessage({ state: 'closed' }); });
@@ -333,20 +529,33 @@ export function runApp2D(variant) {
     };
     return { message: t('gate.mouseIntro'), buttons: [{ label: t('gate.start'), icon: 'play', primary: true, fn: () => { unlockAudio(); goIntro(); } }] };
   }
-  // 17d: Start the camera (a click: browsers ask for the camera after a gesture) → loading → "show your hand" → once a
+  // 18d: Start the camera (a click: browsers ask for the camera after a gesture) → loading → "show your hand" → once a
   // hand points: Calibrate reach · Continue (dwell or tap with the fingertip, or click)
   function handGateSpec() {
     const st = HS.status, mouse = { label: t('gate.useMouse'), icon: 'mouse', click: true, href: VARIANTS.b.page };
-    if (st === 'tracking') return { message: t('gate.hands.status.tracking'), buttons: [
+    if (st === 'tracking') return { message: t('gate.hands.status.tracking'), extra: cameraChooser(), buttons: [
       { label: t('gate.hands.calibrate'), icon: 'hand', primary: !cfg.handBox, fn: () => openReach() },
       { label: t('gate.hands.continue'), icon: 'play', primary: !!cfg.handBox, fn: () => goIntro() },
     ] };
-    if (st === 'camera' || st === 'model' || st === 'ready') return { message: t('gate.hands.status.' + st), buttons: [mouse] };
+    if (st === 'camera' || st === 'model' || st === 'ready') return { message: t('gate.hands.status.' + st), extra: st === 'ready' ? cameraChooser() : null, buttons: [mouse] };
     const failed = ['denied', 'nocamera', 'insecure', 'error'].includes(st);
     return {
       message: failed ? t('gate.hands.status.' + st, { reason: HS.reason }) : t('gate.hands.intro'), kind: failed ? 'error' : '',
       buttons: [{ label: t(failed ? 'gate.hands.retry' : 'gate.hands.start'), icon: 'hand', primary: true, click: true, fn: startHands }, mouse],
     };
+  }
+  // 18: two webcams on one computer — each window chooses its own (shown once a camera has been allowed)
+  function cameraChooser() {
+    const cams = hands && hands.cameras ? hands.cameras : [];
+    if (cams.length < 2) return null;
+    const sel = document.createElement('select'); sel.className = 'cam-select'; sel.setAttribute('aria-label', t('cfg.hands.camera'));
+    sel.append(new Option(t('cfg.hands.cameraDefault'), ''));
+    cams.forEach((c, i) => sel.append(new Option(c.label || t('cfg.hands.cameraN', { n: i + 1 }), c.deviceId)));
+    sel.value = cfg.handCameraId || '';
+    sel.addEventListener('change', () => onCfgChange('handCameraId', sel.value));
+    const wrap = document.createElement('label'); wrap.className = 'cam-choice';
+    wrap.append(Object.assign(document.createElement('span'), { textContent: t('cfg.hands.camera') }), sel);
+    return wrap;
   }
   function renderGate() { if (gate) gate.close(true); gate = showGate(Object.assign({ root, gaze, variant, onLanguage: pickLanguage }, gateSpec())); }
   const gateText = (s) => (!s ? t('gate.status.invoked') : s.state === 'error' ? (s.message || t('gate.trackerFailed')) : t('gate.status.' + s.state));
@@ -407,26 +616,104 @@ export function runApp2D(variant) {
     cover(true);
     try { openConfigLayer(scrollTop); } catch (e) { cover(false); A.cfgUI = null; throw e; }
   }
+  // 18: with partners, Configuration shows "Settings of: this window · each partner" — a partner's settings are shown
+  // from what it publishes, and every change is sent to it (applied and saved there, at once)
+  function participants() {
+    if (!share || !share.active || !share.peers.size) return [];
+    return [{ id: null, label: t('cfg.target.me', { name: peerLabel(share.me()) }), color: peerColour(share.me()), on: !A.cfgTarget }]
+      .concat([...share.peers.values()].map((p) => ({ id: p.id, label: peerLabel(p.info), color: peerColour(p.info), on: A.cfgTarget === p.id })));
+  }
+  function onTarget(id) { if ((id || null) === (A.cfgTarget || null)) return; A.cfgTarget = id || null; refreshConfig(0); }
   function openConfigLayer(scrollTop) {
+    const peer = A.cfgTarget && share ? share.peers.get(A.cfgTarget) : null;
+    if (A.cfgTarget && !peer) A.cfgTarget = null;
+    const onClose = () => { A.cfgUI = null; cover(false); if (!A.cfgRefresh) A.cfgTarget = null; };
+    if (peer) { openRemoteConfig(peer, scrollTop, onClose); return; }
     A.cfgUI = openConfig({
-      variant, cfg, gaze, scrollTop,
+      variant, cfg, gaze, scrollTop, participants: participants(), onTarget,
       onChange: onCfgChange,
       onLanguage: pickLanguage,
       agents: () => agentsEditor({ engine, cfg, onChange: onCfgChange }),
       tracker: isA ? trackerPanel : null,
       hands: isD ? handsPanel : null,
-      onReset: () => { replaceCfg(defaultsFor(variant)); afterCfgSwap(null); buildSurface(surface); toast(t('toast.defaults')); reopenConfig(); },
-      onClearSaved: () => { storage.del(settingsKey(variant)); toast(t('toast.storageCleared', { key: variant.key }), 4200); },
+      share: sharePanel,
+      onReset: () => { resetCfg(); reopenConfig(); },
+      onClearSaved: () => { storage.del(settingsKey(variant)); toast(t('toast.storageCleared', { key: variant.key + seatSuffix }), 4200); },
       links: [
         { label: t('cfg.data.about'), fn: () => { closeConfig(); openPage('about'); } },
         { label: t('cfg.data.help'), fn: () => { closeConfig(); openPage('help'); } },
         A.phase === 'studio' ? { label: t('cfg.data.start'), fn: () => { closeConfig(); goSplash(); } } : null,
       ].filter(Boolean),
-      onClose: () => { A.cfgUI = null; cover(false); },
+      onClose,
+    });
+  }
+  function openRemoteConfig(peer, scrollTop, onClose) {
+    const pv = VARIANTS[peer.info.variant] || variant, pcfg = peer.cfg || deepMerge(defaultsFor(pv), {}), ex = peer.extra || {};
+    const send = (k, v) => { if (k === 'boids' || k === 'preset') return; setPath(pcfg, k, v); share.set(peer.id, k, v); };
+    const cmd = (c, a) => { SH.cmdT = performance.now(); share.cmd(peer.id, c, a); };
+    const proxy = {   // the agents editor drives this stand-in for the partner's engine
+      S: { boids: Array.isArray(pcfg.agents) ? pcfg.agents : [] },
+      applyPreset: (k) => cmd('preset', k), addBoid: () => cmd('addBoid'), removeBoid: (i) => cmd('removeBoid', i),
+      randomizeBoid: (i) => cmd('randomizeBoid', i), resetBoid: (i) => cmd('resetBoid', i), randomizeAll: () => cmd('randomizeAll'),
+    };
+    A.cfgAgents = proxy.S.boids.length;
+    const btnPanel = (info, buttons, help) => () => {
+      const box = document.createElement('div'); box.className = 'tracker-panel';
+      box.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: info }));
+      const row = document.createElement('div'); row.className = 'row wrap';
+      for (const [label, fn] of buttons) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = label; b.addEventListener('click', fn); row.append(b); }
+      box.append(row);
+      if (help) box.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: help }));
+      return box;
+    };
+    const trk = ex.tracker, hnd = ex.hands;
+    A.cfgUI = openConfig({
+      variant: pv, cfg: pcfg, gaze, scrollTop, participants: participants(), onTarget, remote: { name: peerLabel(peer.info), key: ex.key || pv.key },
+      onChange: send, onLanguage: null,
+      agents: () => agentsEditor({ engine: proxy, cfg: pcfg, onChange: (k, v) => { if (k === 'boids') cmd('agents', proxy.S.boids.map((b) => ({ speed: b.speed, spring: b.spring, damp: b.damp, mass: b.mass, jitter: b.jitter }))); else send(k, v); } }),
+      tracker: pv.id === 'a' ? btnPanel(!trk ? t('cfg.tracker.notRunning') : trk.calibrated ? t('cfg.tracker.calibrated', { points: trk.points || '?', model: trk.model || '' }) + (trk.fps ? t('cfg.tracker.fps', { fps: trk.fps }) : '') : t('cfg.tracker.notCalibrated'),
+        [[t('cfg.tracker.recentre'), () => cmd('tracker', 'recenter')], [t('cfg.tracker.cal5'), () => cmd('tracker', 'cal5')], [t('cfg.tracker.cal9'), () => cmd('tracker', 'cal9')], [t('cfg.tracker.settings'), () => cmd('tracker', 'settings')]],
+        t('cfg.remote.trackerHelp')) : null,
+      hands: pv.id === 'd' ? btnPanel(hnd && hnd.running ? t('cfg.hands.status', { fps: hnd.fps, delegate: hnd.delegate || '—' }) : t('cfg.hands.notRunning'),
+        [[t('cfg.hands.calibrate'), () => cmd('reach')], [t('cfg.hands.reset'), () => cmd('reachReset')]], t('cfg.remote.handsHelp')) : null,
+      share: null,
+      onReset: () => cmd('reset'), onClearSaved: () => cmd('clearSaved'),
+      links: [{ label: t('cfg.remote.clearTheirs'), fn: () => cmd('clear') }],
+      onClose,
     });
   }
   function closeConfig() { if (!A.cfgUI) return false; A.cfgUI.close(); return true; }
   function reopenConfig() { closeConfig(); openConfigUI(); }
+  function refreshConfig(scroll) {   // re-render in place (the same person, the same scroll)
+    if (!A.cfgUI) return;
+    const st = scroll != null ? scroll : A.cfgUI.scrollTop;
+    A.cfgRefresh = true; closeConfig(); A.cfgRefresh = false;
+    openConfigUI(st);
+  }
+  // Configuration → Shared drawing: who is in the room, their settings, clearing everyone's drawing
+  function sharePanel() {
+    const box = document.createElement('div'); box.className = 'share-panel';
+    const people = share && share.active ? share.members() : [];
+    if (!share || !share.active) box.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: cfg.shareOn ? t('cfg.share.unsupported') : t('cfg.share.off') }));
+    else if (people.length < 2) box.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: t('cfg.share.none', { room: share.room }) }));
+    else {
+      box.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: t('cfg.share.people', { room: share.room }) }));
+      const list = document.createElement('div'); list.className = 'people';
+      for (const m of people) {
+        const row = document.createElement('div'); row.className = 'person';
+        const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = peerColour(m);
+        const name = document.createElement('span'); name.className = 'pname'; name.textContent = peerLabel(m) + (m.id === share.id ? ' — ' + t('cfg.share.you') : '');
+        row.append(dot, name);
+        if (m.id !== share.id) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = t('cfg.share.edit'); b.addEventListener('click', () => onTarget(m.id)); row.append(b); }
+        list.append(row);
+      }
+      const clr = document.createElement('button'); clr.type = 'button'; clr.className = 'btn ghost'; clr.textContent = t('cfg.share.clearAll');
+      clr.addEventListener('click', () => { engine.clear(); share.clearAll(); toast(t('cfg.share.clearAllDone'), 4200); });
+      box.append(list, clr);
+    }
+    box.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: t('cfg.share.help') }));
+    return box;
+  }
   function trackerPanel() {
     const box = document.createElement('div'); box.className = 'tracker-panel';
     const q = ig ? ig.quality() : null, rt = (q && q.runtime) || {};
@@ -450,7 +737,7 @@ export function runApp2D(variant) {
   async function doSave() {
     toast(t('toast.saving'));
     try {
-      const r = await saveSession({ variant, cfg, engine, surface, inkgaze: isA ? ig : null });
+      const r = await saveSession({ variant, cfg, engine, surface, inkgaze: isA ? ig : null, compose });
       toast(t('toast.saved', { png: r.png, json: r.json }), 5200);
     } catch (e) { toast(t('toast.saveFailed', { error: e && e.message ? e.message : e }), 5200); }
   }
@@ -462,20 +749,43 @@ export function runApp2D(variant) {
       onFile: () => { pickSessionFile().then((s) => { if (s) openSession(s); }); },   // runs inside the click (file dialogs need one)
     });
   }
+  // the drawing as everyone sees it: the paper, then every layer in the room's order (18)
+  function compose(maxW = 8192) {
+    const k = Math.min(1, maxW / (surface.width * DPR)), cw = Math.max(1, Math.round(surface.width * DPR * k)), ch = Math.max(1, Math.round(surface.height * DPR * k));
+    const out = document.createElement('canvas'); out.width = cw; out.height = ch;
+    const g = out.getContext('2d'); g.fillStyle = TK.bgCanvas; g.fillRect(0, 0, cw, ch);
+    const order = share && share.active ? share.members().map((m) => m.id) : [];
+    const canvases = [{ id: share ? share.id : '', cv: surface.tiles[0].canvas }].concat([...SH.layers].map(([id, ly]) => ({ id, cv: ly.cv })));
+    canvases.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    for (const l of canvases) g.drawImage(l.cv, 0, 0, cw, ch);
+    return out;
+  }
+  // an opaque drawing (a saved composite, or a session of builds 16–17) into this transparent layer: the paper colour
+  // becomes transparent, so the partners' ink below stays visible
+  function keyOutPaper(img) {
+    const c = document.createElement('canvas'); c.width = img.naturalWidth || img.width; c.height = img.naturalHeight || img.height;
+    const g = c.getContext('2d', { willReadFrequently: true }); g.drawImage(img, 0, 0);
+    const d = g.getImageData(0, 0, c.width, c.height), a = d.data, [pr, pg, pb] = [250, 249, 247];
+    for (let i = 0; i < a.length; i += 4) if (Math.abs(a[i] - pr) <= 3 && Math.abs(a[i + 1] - pg) <= 3 && Math.abs(a[i + 2] - pb) <= 3) a[i + 3] = 0;
+    g.putImageData(d, 0, 0);
+    return c;
+  }
   async function openSession(json) {
     engine.closeModal();
     const s = parseSession(json);
     if (!s || s.error) { toast(s && s.error ? t(s.error) : t('toast.nothingOpened'), 4200); return; }
     engine.penUp('open'); engine.endGridLine();
     const before = cfg.panEnabled + ':' + cfg.worldScale;
+    const keep = { shareOn: cfg.shareOn, shareRoom: cfg.shareRoom, shareName: cfg.shareName, handCameraId: cfg.handCameraId, handBox: cfg.handBox };
     const r = await applySession(s, {
-      variant, cfg, engine, getSurface: () => surface, inkgaze: isA ? ig : null,
+      variant, cfg, engine, getSurface: () => surface, inkgaze: isA ? ig : null, prepare: keyOutPaper,
       applyCfg: (next, boids) => {
-        replaceCfg(deepMerge(defaultsFor(variant), next));
+        replaceCfg(deepMerge(defaultsFor(variant), Object.assign({}, next, keep)));   // the room and the camera stay
         afterCfgSwap(boids);
         if (before !== cfg.panEnabled + ':' + cfg.worldScale) buildSurface(null);
       },
     });
+    sendLayer();   // 18: the opened drawing, to the others
     let msg = t('toast.restored', { date: new Date(s.savedAt).toLocaleString(document.documentElement.lang || undefined) });
     if (r.calibration) msg += r.calibration.ok ? t('toast.calRestored') : t('toast.calNotLoaded', { reason: r.calibration.reason || t('toast.calOtherCamera') });
     toast(msg, 5600);
@@ -499,11 +809,16 @@ export function runApp2D(variant) {
     let surf = null;
     if (g && !hudId) {
       ghost(g, dt);
-      const hold = A.holdT && now - A.holdT < 100;   // 17a: a saccade in flight: hold the pen until the escape check
-      if (!hold || !A.held) A.held = { x: A.ghost.x + A.pan.x, y: A.ghost.y + A.pan.y };
+      const hold = A.holdT && now - A.holdT < 100;   // 18a: a saccade in flight: hold the pen until the escape check
+      if (!hold || !A.held) A.held = { x: clamp(A.ghost.x + A.pan.x, 0, surface.width), y: clamp(A.ghost.y + A.pan.y, 0, surface.height) };
       surf = A.held;
     }
     engine.update({ now, dt, hudId, overHud: !!hudId, surf, gazeDegS: A.degS, blinkMs: A.blinkMs, lost: !ok });
+    if (share && share.active) {   // 18: where I am, for the others (world units: surface px / surface width)
+      if (!g) share.cursor(0, 0, 'off');
+      else share.cursor(clamp(g.x + A.pan.x, 0, surface.width) / surface.width, clamp(g.y + A.pan.y, 0, surface.height) / surface.width,
+        hudId ? 'menu' : HUD.cursorState(engine) === 'drawing' ? 'draw' : engine.S.drawMode ? 'armed' : 'rest');
+    }
   }
   function frame(now) { requestAnimationFrame(frame); tick(now); }
   let lastErrT = 0;
@@ -514,7 +829,8 @@ export function runApp2D(variant) {
     try {
       updateGaze(dt);
       if (A.phase === 'studio' && !overlayOpen()) tickStudio(now, dt);
-      else gaze.update(aiming() && !A.reach ? onScreen(A.gaze) : null, dt, now);
+      else { gaze.update(aiming() && !A.reach ? onScreen(A.gaze) : null, dt, now); if (share && share.active) share.cursor(0, 0, 'off'); }
+      if (share && share.active) share.flush();
     } catch (e) { report(e); }
     try { render(now); } catch (e) { report(e); }
   }
@@ -532,6 +848,7 @@ export function runApp2D(variant) {
       if (isA && A.lost) badge(c, t('badge.faceLost'));
       else if (isA && A.paused && A.trackerState) badge(c, t('badge.tracker', { state: A.trackerState }));
       else if (isD && hands && hands.running && !HS.present && performance.now() - HS.seenT > 1000) badge(c, t('badge.handLost'));
+      if (share && share.active && share.peers.size) { if (cfg.showPartners !== false) drawPartners(c); drawRoom(c); }
     }
     if (A.reach || !live()) return;
     const g = onScreen(A.gaze);
@@ -541,7 +858,7 @@ export function runApp2D(variant) {
       c.save(); c.setLineDash([5, 6]); c.lineWidth = 2; c.strokeStyle = 'rgba(25,24,23,0.4)'; c.beginPath(); c.arc(g.x, g.y, 24, 0, Math.PI * 2); c.stroke(); c.restore();
     }
   }
-  // 17d: the hand is seen but does not point (a fist, an open hand): a small dotted ring — it neither presses nor inks.
+  // 18d: the hand is seen but does not point (a fist, an open hand): a small dotted ring — it neither presses nor inks.
   // In the studio an open palm shows the wave's progress (a dot per swing; two open Clear Drawing), the back of the
   // hand the pulls' progress (a dot per pull; undoPulls of them undo).
   function handRest(c, g, studio) {
@@ -555,7 +872,7 @@ export function runApp2D(variant) {
       c.beginPath(); c.arc(x, g.y + 28, 5, 0, Math.PI * 2); c.fillStyle = i < k ? (back ? TK.ink : TK.red) : 'rgba(25,24,23,0.2)'; c.fill();
     }
   }
-  // 17d: what a new pose did (thickness · direct or n agents · rest · wave to clear), beside the cursor for 1.8 s
+  // 18d: what a new pose did (thickness · direct or n agents · rest · wave to clear), beside the cursor for 1.8 s
   function drawChip(c, g) {
     const ch = HS.chip; if (!ch) return;
     const age = performance.now() - ch.t; if (age > 1800) { HS.chip = null; return; }
@@ -564,6 +881,37 @@ export function runApp2D(variant) {
     const w = c.measureText(ch.text).width + 24, x = clamp(g.x + 24, 8, W - w - 8), y = clamp(g.y - 46, 8, H - 36);
     c.fillStyle = 'rgba(25,24,23,0.86)'; c.beginPath(); if (c.roundRect) c.roundRect(x, y, w, 28, 14); else c.rect(x, y, w, 28); c.fill();
     c.fillStyle = '#fff'; c.fillText(ch.text, x + 12, y + 14.5); c.restore();
+  }
+  // 18: the partners' cursors — a ring in their ink colour with their name (dashed at rest, a dot while drawing, faint
+  // over their menu); hidden after 1.2 s without news
+  function drawPartners(c) {
+    const now = performance.now();
+    for (const p of share.peers.values()) {
+      const q = p.cursor; if (!q || q.st === 'off' || now - q.t > 1200) continue;
+      const x = q.x * surface.width - A.pan.x, y = q.y * surface.width - A.pan.y, col = peerColour(p.info);
+      c.save(); c.globalAlpha = q.st === 'menu' ? 0.4 : 0.95;
+      c.lineWidth = 3; c.strokeStyle = col; if (q.st === 'rest') c.setLineDash([5, 5]);
+      c.beginPath(); c.arc(x, y, 17, 0, Math.PI * 2); c.stroke(); c.setLineDash([]);
+      if (q.st === 'draw' || q.st === 'armed') { c.beginPath(); c.arc(x, y, q.st === 'draw' ? 5 : 2.5, 0, Math.PI * 2); c.fillStyle = col; c.fill(); }
+      const name = p.info.name || t('variant.' + p.info.variant);
+      c.font = "700 12px 'JetBrains Mono', ui-monospace, monospace"; c.textBaseline = 'middle';
+      const w = c.measureText(name).width + 16, lx = clamp(x + 20, 4, W - w - 4), ly = clamp(y + 16, 4, H - 26);
+      c.fillStyle = col; c.beginPath(); if (c.roundRect) c.roundRect(lx, ly, w, 22, 11); else c.rect(lx, ly, w, 22); c.fill();
+      c.fillStyle = '#fff'; c.fillText(name, lx + 8, ly + 11.5);
+      c.restore();
+    }
+  }
+  // 18: who is drawing here — a quiet line at the top right (each person's colour and variant)
+  function drawRoom(c) {
+    const people = share.members();
+    c.save(); c.font = "600 12px 'JetBrains Mono', ui-monospace, monospace"; c.textBaseline = 'middle'; c.textAlign = 'left';
+    let x = W - 14; const y = 22;
+    for (let i = people.length - 1; i >= 0; i--) {
+      const m = people[i], label = peerLabel(m), w = c.measureText(label).width;
+      x -= w; c.globalAlpha = 0.85; c.fillStyle = TK.label; c.fillText(label, x, y);
+      x -= 14; c.beginPath(); c.arc(x + 5, y, 5, 0, Math.PI * 2); c.fillStyle = peerColour(m); c.fill(); x -= 16;
+    }
+    c.restore();
   }
   function badge(c, text) {
     c.save(); c.font = "600 13px 'JetBrains Mono', ui-monospace, monospace"; c.textAlign = 'center'; c.textBaseline = 'middle';
@@ -683,7 +1031,7 @@ export function runApp2D(variant) {
     const tg = e.target;
     if (tg && (tg.isContentEditable || /^(INPUT|SELECT|TEXTAREA)$/.test(tg.tagName || ''))) return;
     const k = (e.key || '').toLowerCase();
-    if (k === 'escape') { if (closeTop()) e.preventDefault(); return; }   // otherwise InkGaze opens its settings (17a)
+    if (k === 'escape') { if (closeTop()) e.preventDefault(); return; }   // otherwise InkGaze opens its settings (18a)
     if (A.orbit) { if ('oklçawsd'.includes(k) && k) { A.orbit.keys.add(k); e.preventDefault(); } else if (k === 'p') exitOrbit(); return; }
     if (k === 'f' && !e.repeat) { toggleFullscreen(); return; }
     if (A.phase !== 'studio' || overlayOpen()) return;
@@ -726,7 +1074,7 @@ export function runApp2D(variant) {
       return;
     }
     if (id === 'scrim' || id === 'scrim-far') { if (engine.S.modal) engine.activate('modal:cancel'); else engine.S.submenu = null; return; }
-    if (!id && !isA && engine.S.drawMode) controllerDraw();   // 17b / 17d: a click on the canvas starts / stops the line
+    if (!id && !isA && engine.S.drawMode) controllerDraw();   // 18b / 18d: a click on the canvas starts / stops the line
   });
   stage.addEventListener('pointerdown', (e) => { if (e.button === 2) A.drag = true; });
   window.addEventListener('pointerup', (e) => { if (e.button === 2) A.drag = false; });
@@ -757,10 +1105,11 @@ export function runApp2D(variant) {
   setupCanvases();
   buildSurface(null);
   makeEngine();
+  startShare();   // 18: join the room (no network: the other windows of this browser)
   window.inkwell = {
     version: VERSION, variant, cfg, A, get engine() { return engine; }, get surface() { return surface; }, get inkgaze() { return ig; },
-    get hands() { return hands; }, HS,
-    // 17d tests without a camera: the tracker as if running; then hands.inject({pose, n, thumb, x, y, …}, t)
+    get hands() { return hands; }, HS, get share() { return share; }, SH, compose,
+    // 18d tests without a camera: the tracker as if running; then hands.inject({pose, n, thumb, x, y, …}, t)
     async handTest() { await ensureHands(); HS.status = 'tracking'; hands.state = 'tracking'; A.paused = false; return hands; },
     // tests: stop the live input, then inject gaze points (viewport px)
     testMode() { if (ig) ig.stop(); A.paused = false; A.state = 'fixation'; },

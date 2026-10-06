@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// INKWELL 17 — DOM screens: intro dots · gate · welcome (splash) · About · Help · Configuration · toasts · languages ·
-// the reach calibration (17d)
+// INKWELL 18 — DOM screens: intro dots · gate · welcome (splash) · About · Help · Configuration · toasts · languages ·
+// the reach calibration (18d)
 // Everything here is gaze-operable (GazeDom: dwell with a progress ring, exit grace, target allowance) and clickable
-// (17d: also a finger tap).
+// (18d: also a finger tap).
 // Every text comes from the language files (i18n/*.json) through t().
 // ═══════════════════════════════════════════════════════════════════════════
 import { VERSION, BUILD_NO, THICKNESS, THICKNESS_ORDER, LINE_ORDER, COLOR_ORDER, PRESETS, AGENT_RANGE, chime, unlockAudio, clamp, getPath } from './core.js';
@@ -84,7 +84,7 @@ export class GazeDom {
     }
     return hit;
   }
-  // a click at p (17d: a finger tap): the dwell target under it fires at once (then, as after a dwell, p must leave it)
+  // a click at p (18d: a finger tap): the dwell target under it fires at once (then, as after a dwell, p must leave it)
   press(p) {
     const tg = this.targets.find((g) => this._visible(g.el) && this._hit(g, p));
     if (!tg) return false;
@@ -142,9 +142,9 @@ export function showIntro({ root, gaze, cfg, ppd, hint, onDone }) {
   return sec;
 }
 
-// ═══ gate: the first screen of a variant (17a: while InkGaze has the stage; 17b / 17c: Start; 17d: the camera) ═══════
+// ═══ gate: the first screen of a variant (18a: while InkGaze has the stage; 18b / 18c: Start; 18d: the camera) ═══════
 // buttons: {label, icon?, fn?, href?, primary?, click? (click only: not a gaze target — e.g. before calibration)}
-export function showGate({ root, gaze, variant, message = '', kind = '', buttons = [], onLanguage }) {
+export function showGate({ root, gaze, variant, message = '', kind = '', buttons = [], onLanguage, extra = null }) {
   const msg = h('p', { class: 'gate-msg' + (kind ? ' ' + kind : ''), role: 'status', 'aria-live': 'polite', text: message });
   const row = h('div', { class: 'gate-actions' });
   for (const b of buttons) {
@@ -156,7 +156,7 @@ export function showGate({ root, gaze, variant, message = '', kind = '', buttons
   }
   const sec = h('section', { class: 'screen gate', 'aria-label': variantTitle(variant) },
     onLanguage ? languageSwitch({ gaze, onPick: onLanguage }) : null,
-    h('div', { class: 'gate-main' }, h('h1', { class: 'logo', text: 'inkwell' }), h('p', { class: 'kicker', html: SIX_LINK + ' · ' + esc(variantName(variant)) }), msg, row));
+    h('div', { class: 'gate-main' }, h('h1', { class: 'logo', text: 'inkwell' }), h('p', { class: 'kicker', html: SIX_LINK + ' · ' + esc(variantName(variant)) }), msg, row, extra));
   root.append(sec);
   return {
     el: sec,
@@ -215,6 +215,13 @@ export function showHelp(o) {
 const pct = (v) => Math.round(v * 100) + ' %';
 const SECTIONS = [
   { key: 'language', custom: 'language' },
+  // 18: the shared drawing (the 2D variants; the people in the room, their settings, clearing everyone's drawing)
+  { key: 'share', variants: 'abd', custom: 'share', items: [
+    { k: 'shareOn', t: 'check' },
+    { k: 'shareName', t: 'text', max: 24 },
+    { k: 'shareRoom', t: 'text', max: 24 },
+    { k: 'showPartners', t: 'check' },
+  ] },
   { key: 'activation', items: [
     { k: 'menuDwellMs', t: 'range', min: 300, max: 2000, step: 50, unit: 'ms' },
     { k: 'confirmDwellMs', t: 'range', min: 600, max: 3000, step: 50, unit: 'ms' },
@@ -338,7 +345,9 @@ function languagePanel({ onPick }) {
 
 // A layer (not a top-layer <dialog>) so the gaze reticle, drawn above everything, stays visible over it. The close
 // button and the scroll arrows are gaze targets; the controls are for the mouse / keyboard (a helper or the researcher).
-export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, hands, onReset, onClearSaved, onLanguage, links = [], onClose, scrollTop = 0 }) {
+// 18: participants [{id, label, color, on}] add a "Settings of" switch (onTarget(id)); remote {name, key}: the panel shows
+// a partner's settings — its language, room and links stay with that person
+export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, hands, share, onReset, onClearSaved, onLanguage, links = [], onClose, scrollTop = 0, participants = [], onTarget = null, remote = null }) {
   const old = $('#config'); if (old) old.remove();
   const prevFocus = document.activeElement;
   let layer = null;
@@ -351,8 +360,18 @@ export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, hand
   const scroll = (dir) => body.scrollBy({ top: dir * body.clientHeight * 0.6, behavior: 'smooth' });
   up.addEventListener('click', () => scroll(-1)); down.addEventListener('click', () => scroll(1));
   const panel = h('div', { class: 'cfg', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'cfg-title' },
-    h('header', { class: 'cfg-head' }, h('div', null, h('h2', { id: 'cfg-title', text: t('cfg.title') }), h('p', { class: 'cfg-sub', text: t('cfg.sub', { variant: variantTitle(variant) }) })), closeBtn),
+    h('header', { class: 'cfg-head' + (remote ? ' remote' : '') }, h('div', null, h('h2', { id: 'cfg-title', text: t('cfg.title') }),
+      h('p', { class: 'cfg-sub', text: remote ? t('cfg.subRemote', { name: remote.name }) : t('cfg.sub', { variant: variantTitle(variant) }) })), closeBtn),
     body, up, down);
+  if (participants.length > 1 && onTarget) {   // whose settings: this window, or a partner's
+    const row = h('div', { class: 'targets', role: 'group', 'aria-label': t('cfg.target.label') }, h('span', { class: 'targets-label', text: t('cfg.target.label') }));
+    for (const p of participants) {
+      const b = h('button', { class: 'chip target' + (p.on ? ' on' : ''), type: 'button', 'aria-pressed': p.on ? 'true' : 'false' }, h('span', { class: 'dot', style: 'background:' + p.color }), p.label);
+      b.addEventListener('click', () => onTarget(p.id));
+      row.append(b);
+    }
+    body.append(row);
+  }
   layer = h('div', { id: 'config', class: 'cfg-layer' }, panel);
   layer.addEventListener('mousedown', (e) => { if (e.target === layer) close(); });
   const controls = [];
@@ -360,15 +379,18 @@ export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, hand
     if (sec.variants && !sec.variants.includes(variant.id)) continue;
     if (sec.custom === 'tracker' && !tracker) continue;
     if (sec.custom === 'hands' && !hands) continue;
+    if (sec.custom === 'share' && !share) continue;
+    if (remote && sec.custom === 'language') continue;   // the language is each person's own
     const box = h('section', { class: 'cfg-sec', 'data-sec': sec.key }, h('h3', { text: t('cfg.sections.' + sec.key) }));
     if (sec.custom === 'language') box.append(languagePanel({ onPick: onLanguage }));
     else if (sec.custom === 'agents') box.append(agents());
     else if (sec.custom === 'tracker') box.append(tracker());
     else if (sec.custom === 'hands') box.append(hands());
+    else if (sec.custom === 'share') box.append(share());
     else if (sec.custom === 'data') {
       const r = h('button', { class: 'btn', type: 'button', text: t('cfg.data.reset') }), c = h('button', { class: 'btn', type: 'button', text: t('cfg.data.clearSaved') });
       r.addEventListener('click', () => onReset()); c.addEventListener('click', () => onClearSaved());
-      box.append(h('div', { class: 'row wrap' }, r, c), h('p', { class: 'hint', text: t('cfg.data.footer', { version: VERSION, key: variant.key }) }));
+      box.append(h('div', { class: 'row wrap' }, r, c), h('p', { class: 'hint', text: remote ? t('cfg.remote.footer', { key: remote.key }) : t('cfg.data.footer', { version: VERSION, key: variant.key }) }));
       if (links.length) {
         const lr = h('div', { class: 'row wrap' });
         for (const l of links) { const b = h('button', { class: 'btn ghost', type: 'button', text: l.label }); b.addEventListener('click', () => l.fn()); lr.append(b); }
@@ -388,11 +410,14 @@ export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, hand
       } else if (it.t === 'select') {
         input = h('select', { id }); for (const [v, txt] of it.options()) input.append(new Option(txt, v));
         input.addEventListener('change', () => onChange(it.k, input.value));
+      } else if (it.t === 'text') {
+        input = h('input', { type: 'text', id, maxlength: it.max || 40, autocomplete: 'off', spellcheck: 'false' });
+        input.addEventListener('change', () => onChange(it.k, input.value.trim()));
       }
       controls.push({ it, input, out });
       const row = it.t === 'check'
         ? h('div', { class: 'ctl check' }, h('label', { for: id }, input, h('span', { text: label })), help ? h('p', { class: 'hint', text: help }) : null)
-        : h('div', { class: 'ctl' }, h('label', { for: id }, h('span', { text: label }), out), input, help ? h('p', { class: 'hint', text: help }) : null);
+        : h('div', { class: 'ctl' + (it.t === 'text' ? ' text' : '') }, h('label', { for: id }, h('span', { text: label }), it.t === 'text' ? null : out), input, help ? h('p', { class: 'hint', text: help }) : null);
       box.append(row);
     }
     body.append(box);
@@ -400,7 +425,9 @@ export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, hand
   function sync() {
     for (const { it, input, out } of controls) {
       const v = getPath(cfg, it.k);
-      if (it.t === 'check') input.checked = !!v; else input.value = String(v);
+      if (it.t === 'check') input.checked = !!v;
+      else if (it.t === 'text') { if (document.activeElement !== input) input.value = v == null ? '' : String(v); }
+      else input.value = String(v);
       if (it.t === 'range') out.textContent = fmtVal(it, +v);
     }
   }
@@ -412,7 +439,7 @@ export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, hand
   return { close, sync, el: layer, get scrollTop() { return body.scrollTop; } };
 }
 
-// ═══ 17d: calibrate the reach — a 5-s sweep with the pointing finger, the camera view shown large ════════════════
+// ═══ 18d: calibrate the reach — a 5-s sweep with the pointing finger, the camera view shown large ════════════════
 // (Cancel is click-only, and Esc: the cursor's mapping is what is being measured)
 export function showReach({ root, onCancel }) {
   const cv = h('canvas', { class: 'reach-cam', width: 640, height: 480, 'aria-hidden': 'true' });

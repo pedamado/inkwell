@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Inkwell 17</title>
-    <meta name="description" content="Inkwell 17 — the SiX gaze drawing studio in four variants: webcam eye tracker (InkGaze.js), mouse cursor, Cardboard / WebXR with a 360° canvas, and hand gestures through the webcam (for caregivers).">
+    <title>Inkwell 18</title>
+    <meta name="description" content="Inkwell 18 — the SiX gaze drawing studio in four variants, drawing together in two windows: webcam eye tracker (InkGaze.js), mouse cursor, Cardboard / WebXR with a 360° canvas, and hand gestures through the webcam (for caregivers).">
 <!--
-  Inkwell 17 — a prototype of the SiX research project «Drawing for Social Re-connectivity» (FBAUP · FCT 2023.11224.PEX),
+  Inkwell 18 — a prototype of the SiX research project «Drawing for Social Re-connectivity» (FBAUP · FCT 2023.11224.PEX),
   PI Eliana Penedos-Santiago and the SiX team · https://six.fba.up.pt/
   Interface, expressive line and drawing agents: Pedro Amado (FBAUP / i2ADS). Code written with Google Gemini and
-  Anthropic Claude (Inkwell 16–17: Claude Opus 5.5, October 2026). Full credits: README.md.
+  Anthropic Claude (Inkwell 16–18: Claude Opus 5.5, October 2026). Full credits: README.md.
 -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/inkwell.css?v=17.1.0">
+    <link rel="stylesheet" href="css/inkwell.css?v=18.0.0">
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#faf9f7">
@@ -39,49 +39,59 @@
         .docs a:hover { background: var(--red-soft); }
         .chooser footer { margin-top: 56px; font-size: 13px; color: var(--ink-label); text-align: center; max-width: 60em; }
         .chooser .langs { position: fixed; }
+        .together { max-width: 46em; margin: 0 0 14px; text-align: center; color: var(--ink-label); font-size: 16px; }
+        .new-windows button { font-family: var(--mono); font-size: 14px; padding: 10px 16px; border-radius: 999px; border: 1px solid var(--divider); background: var(--surface-button); color: var(--ink); cursor: pointer; }
+        .new-windows button:hover { background: var(--red-soft); }
     </style>
 </head>
 <body>
     <div class="langs" id="langs" role="group" aria-label="Language"></div>
     <main class="chooser">
         <h1 class="logo">inkwell</h1>
-        <p class="kicker">SiX · Inkwell 17.1.0</p>
+        <p class="kicker">SiX · Inkwell 18.0.0</p>
         <h2 data-i18n="chooser.title">Choose a variant</h2>
         <div class="cards">
-            <a class="card main" href="inkwell-17a-eyetracker.html">
-                <span class="tag">17a</span>
+            <a class="card main" href="inkwell-18a-eyetracker.html">
+                <span class="tag">18a</span>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg>
                 <span class="name" data-i18n="variant.a">eye tracker</span>
                 <p data-i18n="chooser.a">Webcam eye tracking with InkGaze.js — the main prototype.</p>
                 <span class="go"><span data-i18n="chooser.open">Open</span> →</span>
             </a>
-            <a class="card" href="inkwell-17b-mouse-cursor.html">
-                <span class="tag">17b</span>
+            <a class="card" href="inkwell-18b-mouse-cursor.html">
+                <span class="tag">18b</span>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="3" width="11" height="18" rx="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 6.5v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
                 <span class="name" data-i18n="variant.b">mouse cursor</span>
                 <p data-i18n="chooser.b">The mouse plays the eyes: the same dwell and escape, for quick tests.</p>
                 <span class="go"><span data-i18n="chooser.open">Open</span> →</span>
             </a>
-            <a class="card" href="inkwell-17c-cardboard.html">
-                <span class="tag">17c</span>
+            <a class="card" href="inkwell-18c-cardboard.html">
+                <span class="tag">18c</span>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5c0-1.4 1.1-2.5 2.5-2.5h13c1.4 0 2.5 1.1 2.5 2.5v6c0 1.4-1.1 2.5-2.5 2.5h-3.2l-2-2.4a1.7 1.7 0 0 0-2.6 0L8.7 17H5.5A2.5 2.5 0 0 1 3 14.5z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="11.3" r="1.8" fill="currentColor"/><circle cx="16" cy="11.3" r="1.8" fill="currentColor"/></svg>
                 <span class="name" data-i18n="variant.c">cardboard</span>
                 <p data-i18n="chooser.c">Your head aims: a 360° canvas on a phone in a Cardboard viewer, in a WebXR headset, or in a preview.</p>
                 <span class="go"><span data-i18n="chooser.open">Open</span> →</span>
             </a>
-            <a class="card" href="inkwell-17d-hand-gestures.html">
-                <span class="tag">17d</span>
+            <a class="card" href="inkwell-18d-hand-gestures.html">
+                <span class="tag">18d</span>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 12.5V4.6a1.6 1.6 0 0 1 3.2 0v6.2m0-.6a1.6 1.6 0 0 1 3.2 0v1.2m0-.4a1.6 1.6 0 0 1 3.1.4v4.1c0 3.3-2.5 5.9-5.8 5.9h-.9a5.6 5.6 0 0 1-4.5-2.3l-2.6-3.6a1.6 1.6 0 0 1 2.4-2.1l2 1.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 <span class="name" data-i18n="variant.d">hand gestures</span>
                 <p data-i18n="chooser.d">Your hand draws: the webcam follows your index finger, finger poses set the line, the thumb calls the agents — for caregivers and able-bodied participants.</p>
                 <span class="go"><span data-i18n="chooser.open">Open</span> →</span>
             </a>
         </div>
+        <h2 data-i18n="chooser.togetherTitle">Two windows, one drawing</h2>
+        <p class="together" data-i18n="chooser.two">Open a second window of this browser with another variant and move it to the other screen — e.g. 18a for the person drawing with the eyes, 18d for the carer drawing with the hand. The windows join by themselves (no network); each draws in its own colour and uses its own camera.</p>
+        <nav class="docs new-windows" aria-label="Open in a new window">
+            <button type="button" data-open="inkwell-18a-eyetracker.html">18a ↗ <span data-i18n="chooser.newWindow">new window</span></button>
+            <button type="button" data-open="inkwell-18b-mouse-cursor.html">18b ↗ <span data-i18n="chooser.newWindow">new window</span></button>
+            <button type="button" data-open="inkwell-18d-hand-gestures.html">18d ↗ <span data-i18n="chooser.newWindow">new window</span></button>
+        </nav>
         <h2 data-i18n="chooser.docs">Documentation</h2>
         <nav class="docs">
             <a href="README.md" data-i18n="chooser.readme">Read me</a>
             <a href="CHANGELOG.md" data-i18n="chooser.changelog">Changelog</a>
-            <a href="Inkwell%2017%20%E2%80%94%20Product%20Requirements%20Document%20(PRD).md" data-i18n="chooser.prd">Requirements (PRD)</a>
+            <a href="Inkwell%2018%20%E2%80%94%20Product%20Requirements%20Document%20(PRD).md" data-i18n="chooser.prd">Requirements (PRD)</a>
             <a href="lib/inkgaze.js" data-i18n="chooser.inkgaze">InkGaze.js library</a>
         </nav>
         <footer>
@@ -91,7 +101,7 @@
         </footer>
     </main>
     <script type="module">
-        import { initI18n, languages, lang, setLanguage, applyDom } from './js/i18n.js?v=17.1.0';
+        import { initI18n, languages, lang, setLanguage, applyDom } from './js/i18n.js?v=18.0.0';
         const box = document.getElementById('langs');
         function chips() {
             box.textContent = '';
@@ -104,6 +114,12 @@
             }
         }
         initI18n().then(() => { applyDom(); chips(); }).catch(() => { /* the English page stays */ });
+        // a separate window (to drag to the second screen); every click opens one more
+        let nth = 0;
+        for (const b of document.querySelectorAll('[data-open]')) b.addEventListener('click', () => {
+            const w = Math.min(1280, screen.availWidth), h = Math.min(860, screen.availHeight);
+            window.open(b.dataset.open, 'inkwell18-' + Date.now() + '-' + (nth++), `popup=yes,width=${w},height=${h},left=${40 + 30 * nth},top=${40 + 30 * nth}`);
+        });
     </script>
 </body>
 </html>

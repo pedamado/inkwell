@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// INKWELL 17c — VR head-mount: Cardboard (phone, motion sensors) · WebXR headsets · desktop look-around preview
+// INKWELL 18c — VR head-mount: Cardboard (phone, motion sensors) · WebXR headsets · desktop look-around preview
 //   The canvas is a 360° ring around the viewer (yaw 0–360°, elevation +40° … −35°): turn your head to draw all
 //   around. The head aims (the view centre), a dwell selects, a fast head flick is the escape.
 //   The menu floats below the eyes (hudPitchDeg); after a head turn it waits followDelayMs (350 ms), then eases in
@@ -8,7 +8,7 @@
 //   the corners (the whole view always fits: no cropping), and the views are rebuilt on every resize / rotation
 //   (the causes of build 15's cropping: no resize after rotating to landscape, distortion pushing the edges out, a UV
 //   shift for the IPD — here the IPD is a real camera separation).
-//   three.js 0.160.0 (import map in the page). Same engine, menu, sessions and settings as 17a / 17b.
+//   three.js 0.160.0 (import map in the page). Same engine, menu, sessions and settings as 18a / 18b.
 // ═══════════════════════════════════════════════════════════════════════════
 import * as THREE from 'three';
 import {
@@ -37,7 +37,7 @@ export function runVR(variant) {
   if (Array.isArray(cfg.agents)) cfg.boidCount = cfg.agents.length;
   const root = document.getElementById('screens'), host = document.getElementById('vr');
   const overlay = document.getElementById('overlay'); if (overlay) overlay.hidden = true;
-  const gaze = new GazeDom(cfg);   // DOM screens (gate, pages, configuration) are used by touch / click in 17c
+  const gaze = new GazeDom(cfg);   // DOM screens (gate, pages, configuration) are used by touch / click in 18c
   const ppd = cfg.ppd || 12;
   const A = {
     phase: 'boot', mode: 'none',          // mode: 'sensors' (phone) · 'drag' (preview) · 'xr'
@@ -157,7 +157,7 @@ export function runVR(variant) {
   }
   const rr = (c, x, y, w, h, r) => { c.beginPath(); c.roundRect ? c.roundRect(x, y, w, h, r) : c.rect(x, y, w, h); };
 
-  // the menu (same HUD as 17a / 17b, larger text for VR)
+  // the menu (same HUD as 18a / 18b, larger text for VR)
   const hud = makePanel(HUD_W, HUD_H, HUD_ANG, HUD_DIST);
   const hudPivot = new THREE.Object3D(); scene.add(hudPivot); hudPivot.add(hud.mesh);
   let L = null;

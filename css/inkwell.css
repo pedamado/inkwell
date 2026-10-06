@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   INKWELL 17 — styles (17a eye tracker · 17b mouse cursor · 17c cardboard · 17d hand gestures)
+   INKWELL 18 — styles (18a eye tracker · 18b mouse cursor · 18c cardboard · 18d hand gestures · the shared drawing)
    Design tokens as in builds 12–15 (Figma "HUD Prototype" + "Design System"). The paper is light by design (an
    ink-on-paper drawing studio), so there is no dark theme.
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -39,7 +39,12 @@ svg { display: block; }
 /* ── layers: the paper (z 0) · DOM screens (z 10) · configuration (z 20) · 3D view (z 25) · overlay canvas (z 30) · toast (z 40) ── */
 #stage { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: var(--bg-canvas); }
 #paper { position: absolute; inset: 0; overflow: hidden; }
-#paper canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+#paper canvas, #paper .world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+/* 18: the paper under the layers (each person's ink is a transparent layer); with partners whose windows have other
+   proportions, the drawing keeps the room's proportions and the rest of the window is a quiet band */
+#paper .world { z-index: 0; background: var(--bg-canvas); }
+body.letterbox #stage { background: var(--bg-band); }
+body.letterbox #paper .world { box-shadow: 0 0 0 1px var(--hairline), 0 10px 40px rgba(25, 24, 23, 0.10); }
 #overlay { position: fixed; inset: 0; z-index: 30; pointer-events: none; }
 #vr { position: fixed; inset: 0; z-index: 1; background: #e9e5dc; }
 #vr canvas { display: block; }
@@ -69,7 +74,7 @@ body.studio.v-b #stage { cursor: none; }
 .logo { font-family: var(--mono); font-weight: 700; font-size: clamp(64px, 13vw, 176px); letter-spacing: -0.045em; line-height: 0.95; margin: 0; color: var(--ink); }
 .kicker { font-family: var(--mono); font-size: 13px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--red); margin: 18px 0 0; text-align: center; }
 
-/* gate (17a: while InkGaze has the stage · 17b / 17c: Start) */
+/* gate (18a: while InkGaze has the stage · 18b / 18c: Start) */
 .gate-main { display: flex; flex-direction: column; align-items: center; gap: 0; padding: 24px; max-width: 760px; text-align: center; }
 .gate .logo { font-size: clamp(56px, 9vw, 120px); }
 .gate-msg { margin: 34px 0 0; font-size: 19px; color: var(--ink-label); max-width: 34em; min-height: 3em; }
@@ -190,7 +195,7 @@ body.studio.v-b #stage { cursor: none; }
 .agent-row input { width: 100%; accent-color: var(--red); }
 .agent-row output { font-family: var(--mono); font-size: 12.5px; color: var(--ink-label); text-align: right; }
 
-/* 17d: the camera preview (top left, above the screens) and the reach calibration */
+/* 18d: the camera preview (top left, above the screens) and the reach calibration */
 #handcam { position: fixed; left: max(14px, env(safe-area-inset-left)); top: max(14px, env(safe-area-inset-top)); z-index: 35; width: 200px; height: auto; border-radius: 14px; box-shadow: var(--shadow-panel); background: var(--bg-band); pointer-events: none; }
 .reach { gap: 14px; padding: 20px 16px; }
 .reach h2 { margin: 0; font-family: var(--mono); font-size: 24px; letter-spacing: -0.01em; }
@@ -198,6 +203,19 @@ body.studio.v-b #stage { cursor: none; }
 .reach-cam { width: min(640px, 100%, calc((100vh - 280px) * 4 / 3)); height: auto; border-radius: 18px; box-shadow: var(--shadow-panel); background: var(--bg-band); }
 .reach-bar { width: min(520px, 100%); height: 8px; border-radius: 4px; background: var(--hairline); overflow: hidden; }
 .reach-bar span { display: block; width: 0; height: 100%; background: var(--red); transition: width 0.12s linear; }
+
+/* 18: Configuration — whose settings (this window or a partner), the people in the room, the camera of 18d */
+.targets { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 14px 0 12px; border-bottom: 1px solid var(--hairline); }
+.targets-label { font-family: var(--mono); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-label); margin-right: 4px; }
+.chip.target { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
+.chip .dot, .person .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: 0 0 0 1px rgba(25, 24, 23, 0.15); }
+.cfg-head.remote { background: var(--red-soft); }
+.people { display: grid; gap: 8px; margin: 10px 0; }
+.person { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 14px; }
+.person .pname { flex: 1; }
+.ctl.text input { width: 100%; margin-top: 6px; min-height: 44px; padding: 6px 12px; border-radius: 12px; border: 1px solid var(--divider); background: var(--bg-panel); font-family: var(--mono); }
+.cam-choice { display: inline-flex; align-items: center; gap: 10px; margin-top: 18px; font-family: var(--mono); font-size: 14px; color: var(--ink-label); }
+.cam-choice select, .tracker-panel select { min-height: 44px; padding: 6px 10px; border-radius: 12px; border: 1px solid var(--divider); background: var(--bg-panel); max-width: 100%; }
 
 /* toast (top: the menu lives at the bottom) */
 #toast { position: fixed; top: max(18px, env(safe-area-inset-top)); left: 50%; z-index: 40; transform: translate(-50%, -140%); max-width: min(92vw, 640px); padding: 12px 20px; border-radius: 16px; background: var(--ink); color: #fff; font-family: var(--mono); font-size: 14px; line-height: 1.45; box-shadow: var(--shadow-panel); transition: transform 0.28s ease, opacity 0.28s ease, visibility 0s linear 0.28s; pointer-events: none; text-align: center; opacity: 0; visibility: hidden; }
@@ -211,7 +229,7 @@ body.studio.v-b #stage { cursor: none; }
 .orbit-title { color: var(--red-deep); letter-spacing: 0.12em; text-transform: uppercase; }
 body.orbiting #overlay { display: none; }
 
-/* small screens (phones: 17b / 17c look-around) */
+/* small screens (phones: 18b / 18c look-around) */
 @media (max-width: 560px) {
   html, body { font-size: 16px; }
   .gate-msg { font-size: 16px; }

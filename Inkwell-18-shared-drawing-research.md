@@ -5,7 +5,13 @@ computers on the same local network — with the tools we have: a plain LAMP sta
 installable server software? If extra server capability is needed, can the Mac act as the local server (e.g. with VS
 Code port forwarding)?
 
-**Status:** research only — nothing for build 18 has been built. Facts about browsers were checked against the sources
+**Status (updated 6 Oct 2026, build 18.0):** the **same-computer** part is built — §4.1 (the protocol of drawing
+operations) and §4.2 (BroadcastChannel): windows of one browser, one per screen and webcam, share one drawing, cursors
+and settings (see the README, *Drawing together*). Pedro's faculty network blocks traffic between devices, which made
+this the first step. The **network** parts — §4.3 (the SSE / POST relay in PHP or Python) and §4.4 (WebRTC) — remain the
+plan for sharing between computers; they reuse the same messages (`js/share.js`), so only the transport is new.
+
+*Originally:* research only — nothing for build 18 had been built. Facts about browsers were checked against the sources
 listed at the end (October 2026). The Mac's setup was read from this machine: macOS 14.7, **MAMP / MAMP PRO** (PHP
 7.4–8.4 with `pdo_sqlite`), Python 3.9 (used by the hub's `serve-https.sh`), OpenSSL, sqlite3 — and Node 24 is in fact
 installed at `/usr/local/bin/node`, though the plan below does not need it.

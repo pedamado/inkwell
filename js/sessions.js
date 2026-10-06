@@ -1,13 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// INKWELL 17 — drawing sessions: Save (PNG + JSON) and Open (recent drawings in this browser, or a JSON file)
+// INKWELL 18 — drawing sessions: Save (PNG + JSON) and Open (recent drawings in this browser, or a JSON file)
 //   Session JSON: the drawing (PNG data URL), every app setting, the line / colour / grid selections, the agents and
-//   (17a) the user's InkGaze calibration — so a session can be resumed exactly.
+//   (18a) the user's InkGaze calibration — so a session can be resumed exactly.
 //   Every save is also kept in IndexedDB (the last 12 per variant): "Open Drawing" lists them as gaze-dwell targets,
 //   because browsers only open a file dialog on a real click / tap (never on a dwell).
+//   18: the PNG download and the thumbnail are the drawing as everyone sees it (the paper and every person's layer:
+//   compose()); the session keeps THIS person's layer (transparent), which is what Open restores into their layer.
 // ═══════════════════════════════════════════════════════════════════════════
 import { VERSION, BUILD } from './core.js';
 
-const DB = 'inkwell-17', STORE = 'sessions', KEEP = 12;
+const DB = 'inkwell-18', STORE = 'sessions', KEEP = 12;
 
 function stamp(d = new Date()) { return d.toISOString().slice(0, 19).replace(/[:]/g, '-'); }
 function download(blob, name) {
@@ -44,19 +46,19 @@ async function idbPut(rec) {
 }
 
 // ---------------------------------------------------------------------------------------------- save
-export async function saveSession({ variant, cfg, engine, surface, inkgaze }) {
+export async function saveSession({ variant, cfg, engine, surface, inkgaze, compose }) {
   const when = new Date(), base = variant.key + '_' + stamp(when);
-  const full = surface.toCanvas(8192);
+  const full = compose ? compose(8192) : surface.toCanvas(8192);
   const png = await toBlob(full);
-  const pngUrl = full.toDataURL('image/png');
-  const thumbC = surface.toCanvas(360);
+  const pngUrl = surface.toCanvas(8192).toDataURL('image/png');   // this person's layer
+  const thumbC = compose ? compose(360) : surface.toCanvas(360);
   let calibration = null;
   try { calibration = inkgaze && inkgaze.exportCalibration ? inkgaze.exportCalibration() : null; } catch (e) { calibration = null; }
   const session = {
     format: 'inkwell-session', schema: 1, build: BUILD, version: VERSION, variant: variant.id, savedAt: when.toISOString(),
     settings: JSON.parse(JSON.stringify(cfg)), state: engine.serialize(), calibration,
-    drawing: { width: surface.width, height: surface.height, wrap: surface.wrap, png: pngUrl },
-    credits: 'Inkwell 17 — a prototype of the SiX research project (FBAUP · FCT 2023.11224.PEX, https://six.fba.up.pt/), PI Eliana Penedos-Santiago and the SiX team. Interface, expressive line and drawing agents: Pedro Amado (FBAUP / i2ADS). Code written with Google Gemini and Anthropic Claude (Inkwell 16–17: Claude Opus 5.5).',
+    drawing: { width: surface.width, height: surface.height, wrap: surface.wrap, png: pngUrl, layer: !surface.bg },
+    credits: 'Inkwell 18 — a prototype of the SiX research project (FBAUP · FCT 2023.11224.PEX, https://six.fba.up.pt/), PI Eliana Penedos-Santiago and the SiX team. Interface, expressive line and drawing agents: Pedro Amado (FBAUP / i2ADS). Code written with Google Gemini and Anthropic Claude (Inkwell 16–18: Claude Opus 5.5).',
   };
   const json = JSON.stringify(session);
   download(png, base + '.png');
@@ -95,8 +97,8 @@ export function parseSession(json) {
   return s;
 }
 // restore: settings (minus the variant's hardware-specific ones when the variant differs), selections, agents,
-// the drawing (fitted to this surface), and the InkGaze calibration (17a)
-export async function applySession(s, { variant, cfg, engine, surface, getSurface, inkgaze, applyCfg }) {
+// the drawing (fitted to this surface), and the InkGaze calibration (18a)
+export async function applySession(s, { variant, cfg, engine, surface, getSurface, inkgaze, applyCfg, prepare }) {
   const keepLocal = s.variant !== variant.id ? ['ppd', 'headGain', 'ipd', 'distort', 'vrZoom', 'invertX', 'invertY', 'flipH', 'flipV', 'escapeDegS', 'escapeAmplitude', 'cursorSmooth'] : [];
   const next = Object.assign({}, cfg, s.settings || {});
   for (const k of keepLocal) next[k] = cfg[k];
@@ -105,7 +107,7 @@ export async function applySession(s, { variant, cfg, engine, surface, getSurfac
   const img = new Image();
   await new Promise((res) => { img.onload = res; img.onerror = res; img.src = s.drawing.png; });
   const surf = getSurface ? getSurface() : surface;   // applyCfg may have rebuilt the surface (another canvas size)
-  if (img.naturalWidth && surf) surf.loadImage(img);
+  if (img.naturalWidth && surf) surf.loadImage(prepare ? prepare(img) : img);
   let calibration = null;
   if (s.calibration && inkgaze && inkgaze.importCalibration) { try { calibration = inkgaze.importCalibration(s.calibration); } catch (e) { calibration = { ok: false, reason: 'error' }; } }
   return { calibration };

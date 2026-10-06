@@ -1,5 +1,5 @@
 {
-  "name": "Inkwell 17 — gaze and hand drawing studio",
+  "name": "Inkwell 18 — gaze and hand drawing studio, together",
   "short_name": "Inkwell",
   "description": "SiX drawing studio: webcam eye tracker (InkGaze.js), mouse, Cardboard / WebXR and webcam hand-gesture variants; dwell menu, escape-saccade stop, autonomous ink agents, 360° VR canvas.",
   "start_url": "./",

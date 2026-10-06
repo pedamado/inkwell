@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// INKWELL 17 — the menu (HUD): layout, hit-testing and rendering on a 2D canvas.
-// Used as the screen overlay (17a / 17b) and as the texture of the VR menu panel (17c).
+// INKWELL 18 — the menu (HUD): layout, hit-testing and rendering on a 2D canvas.
+// Used as the screen overlay (18a / 18b) and as the texture of the VR menu panel (18c).
 //   7 buttons: Line · Thickness · Colour │ ▶ Draw / ❚❚ Pause (larger) │ Grid · Undo · Options
 //   Hit areas are larger than the visible buttons (cfg.hitPad: +50 % area, S3) but never overlap (≤ half the gap).
 //   Pull-up submenus, the Options submenu (Clear · Save · Open · Configuration), and canvas-drawn modals (Clear

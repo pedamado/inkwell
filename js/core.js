@@ -1,22 +1,26 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// INKWELL 17 — core: variants, design tokens, defaults, storage, maths, filters, agents, sound
+// INKWELL 18 — core: variants, design tokens, defaults, storage, maths, filters, agents, sound
 // A prototype of the SiX research project (FBAUP · FCT 2023.11224.PEX), PI Eliana Penedos-Santiago · https://six.fba.up.pt/
 // Interface, expressive line and drawing agents: Pedro Amado (FBAUP / i2ADS). Code: Claude Opus 5.5 (Anthropic), Oct 2026.
 // Full credits: README.md.
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const VERSION = '17.1.0';
-export const BUILD = 'inkwell-17';
-export const BUILD_NO = '17';
-export const STORE = 'inkwell17';      // localStorage prefix: build 17 keeps its own settings (16 is untouched)
+export const VERSION = '18.0.0';
+export const BUILD = 'inkwell-18';
+export const BUILD_NO = '18';
+export const STORE = 'inkwell18';      // localStorage prefix: build 18 keeps its own settings (16 and 17 are untouched)
+// 18: a SEAT (?seat=2 …) keeps separate settings (and, in 18a, a separate eye-tracker calibration) for a second window of
+// the same variant — two people with eye trackers, or two mouse windows for a test. Seat 1 (default) has no suffix.
+export const SEAT = (() => { try { const n = parseInt(new URLSearchParams(location.search).get('seat'), 10); return n > 1 && n < 10 ? n : 1; } catch (e) { return 1; } })();
+export const seatSuffix = SEAT > 1 ? '.seat' + SEAT : '';
 
 // ── the four interaction / testing variants (one app; settings are stored per variant) ──
 //    a · eyes (InkGaze) · b · mouse · c · head (VR) · d · hands (17: the caregiver / able-bodied mode, a webcam)
 export const VARIANTS = {
-  a: { id: 'a', key: 'inkwell-17a-eyetracker', title: 'Inkwell 17a · eye tracker', short: 'eye tracker (webcam)', input: 'inkgaze', vr: false, page: 'inkwell-17a-eyetracker.html' },
-  b: { id: 'b', key: 'inkwell-17b-mouse-cursor', title: 'Inkwell 17b · mouse cursor', short: 'mouse cursor', input: 'mouse', vr: false, page: 'inkwell-17b-mouse-cursor.html' },
-  c: { id: 'c', key: 'inkwell-17c-cardboard', title: 'Inkwell 17c · cardboard', short: 'VR head-mount (Cardboard / WebXR)', input: 'head', vr: true, page: 'inkwell-17c-cardboard.html' },
-  d: { id: 'd', key: 'inkwell-17d-hand-gestures', title: 'Inkwell 17d · hand gestures', short: 'hand gestures (webcam)', input: 'hands', vr: false, page: 'inkwell-17d-hand-gestures.html' },
+  a: { id: 'a', key: 'inkwell-18a-eyetracker', title: 'Inkwell 18a · eye tracker', short: 'eye tracker (webcam)', input: 'inkgaze', vr: false, page: 'inkwell-18a-eyetracker.html' },
+  b: { id: 'b', key: 'inkwell-18b-mouse-cursor', title: 'Inkwell 18b · mouse cursor', short: 'mouse cursor', input: 'mouse', vr: false, page: 'inkwell-18b-mouse-cursor.html' },
+  c: { id: 'c', key: 'inkwell-18c-cardboard', title: 'Inkwell 18c · cardboard', short: 'VR head-mount (Cardboard / WebXR)', input: 'head', vr: true, page: 'inkwell-18c-cardboard.html' },
+  d: { id: 'd', key: 'inkwell-18d-hand-gestures', title: 'Inkwell 18d · hand gestures', short: 'hand gestures (webcam)', input: 'hands', vr: false, page: 'inkwell-18d-hand-gestures.html' },
 };
 
 // ── design tokens (Figma "HUD Prototype" + "Design System", as in builds 12–15) ──
@@ -90,9 +94,9 @@ export const DEFAULTS = {
   dwellStop: false,       // a dwell on the canvas stops the line (off: it caught slow drawing as a stop)
   escapeStop: true,       // the escape saccade (a fast, large look-away) stops the line
   escapePauses: true,     // ... and switches Draw mode back to rest (off: Draw stays armed; the landing point is ignored)
-  escapeAmplitude: 0.3,   // escape: share of the screen diagonal (17a / 17b: InkGaze's escape saccade)
-  escapeDegS: 160,        // escape: head-flick speed in °/s (17c)
-  blinkToggle: false,     // a LONG blink starts / stops the line (17a: deliberate blinks, InkGaze ≥ 0.4 s)
+  escapeAmplitude: 0.3,   // escape: share of the screen diagonal (18a / 18b: InkGaze's escape saccade)
+  escapeDegS: 160,        // escape: head-flick speed in °/s (18c)
+  blinkToggle: false,     // a LONG blink starts / stops the line (18a: deliberate blinks, InkGaze ≥ 0.4 s)
   settleDegS: 6,          // the gaze must slow below this (°/s) before a canvas / grid dwell counts
   dwellRadiusDeg: 1.5,    // canvas dwell tolerance around its anchor (°)
   cursorSmooth: 1.0,      // extra EMA on the reticle (1 = none: InkGaze already smooths)
@@ -125,14 +129,14 @@ export const DEFAULTS = {
   gridMode: 'off',
   gridSpacingDeg: 3.0, gridDotDeg: 0.8, gridPadDeg: 0.2,
 
-  // VR (17c)
+  // VR (18c)
   headGain: 1.0, ipd: 64, distort: 0.0, vrZoom: 1.0, invertX: false, invertY: false, flipH: false, flipV: false,
   followDelayMs: 350,     // the menu waits this long, then eases after the head turn (HTC Vive style)
   followMs: 650,          // ease-in-out duration of the follow
   hudPitchDeg: -26,       // the menu sits below the eyes (downward-glance band −15…−25°, §6)
   stereo: true,
 
-  // hands (17d): the index fingertip is the cursor; poses set Draw mode, thickness and agents
+  // hands (18d): the index fingertip is the cursor; poses set Draw mode, thickness and agents
   handBox: null,          // the calibrated reach: {x0, x1, y0, y1} in the mirrored camera image (null: the default box)
   handSmooth: 0.5,        // 1€ smoothing of the fingertip (0 = raw, 1 = smoothest)
   poseStableMs: 120,      // a pose must hold this long before it counts (no flicker between poses)
@@ -142,6 +146,13 @@ export const DEFAULTS = {
   undoPulls: 2,           // 17.1: the back of the hand, fingers folding toward you and opening: this many pulls = Undo …
   pullWindowMs: 2800,     // … within this time (measured on a real recording: a pull takes 0.6–1.3 s)
   handPreview: true,      // the small camera preview (hand skeleton, reach box, finger scores, pose)
+  handCameraId: '',       // 18: the camera of this window ('' = the browser's default) — two windows, two webcams
+
+  // the shared drawing (18): the windows of this browser in the same room draw together
+  shareOn: true,          // join the room (each person in their own colour and layer; cursors and settings shared)
+  shareRoom: 'studio',    // windows in the same room draw together
+  shareName: '',          // the name the others see ('' = the variant's name)
+  showPartners: true,     // the others' cursors (a coloured ring and a name)
 
   agents: null,           // the agents' own settings (CRUD in Configuration), saved with the rest
 };
@@ -164,7 +175,7 @@ export const storage = {
   del(k) { try { localStorage.removeItem(k); } catch (e) { /* blocked */ } },
 };
 // settings of one variant: DEFAULTS < the variant's starting points < what this browser saved for that variant
-export const settingsKey = (v) => STORE + '.' + v.key + '.settings';
+export const settingsKey = (v) => STORE + '.' + v.key + seatSuffix + '.settings';
 export function defaultsFor(v) { return deepMerge(JSON.parse(JSON.stringify(DEFAULTS)), VARIANT_DEFAULTS[v.id] || {}); }
 export function loadSettings(v) {
   const saved = storage.get(settingsKey(v));

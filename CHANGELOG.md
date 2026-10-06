@@ -1,5 +1,51 @@
 # Inkwell — changelog
 
+## 18.0.0 — 2026-10-06 · `inkwell-18` · drawing together (two windows, one drawing)
+
+Build 18 is 17.1 (all four variants, renamed 18a–18d) plus **the shared drawing**, asked for by Pedro Amado for a
+two-person setup on one computer — e.g. **18a** for the person with LIS (eyes, webcam 1, screen 1) and **18d** for the
+carer (hand, webcam 2, screen 2) — where the institutional network blocks traffic between devices.
+
+### The shared drawing (2D variants)
+- **Windows of the same browser meet by themselves** in a *room* (BroadcastChannel; no server, no network): a toast
+  says who joined; the studio shows who is drawing (top right). Configuration → **Shared drawing**: on / off, your name,
+  the room, the others' cursors, the people in the room, **Clear everyone's drawing**.
+- **Each person draws in their own colour and layer**, seen by the others **in real time** — sent as vector marks
+  (segments, blots, drips, splats with the author's random droplets), so lines stay sharp at any size. A newcomer takes
+  the first free colour. Layers stack in the order people joined, the same in every window.
+- **Each person sees the others' cursors**: a ring in their colour with their name (dashed at rest, a dot while drawing,
+  faint over their menu); can be switched off per window (a moving cursor can pull the eyes of a gaze user).
+- **Undo, redo, Clear and Open** change only your own drawing and reach the others as a whole layer image (marks drawn
+  meanwhile follow it, in order).
+- **Settings of another person.** Configuration → *Settings of* → a partner: the panel shows **their** settings and
+  every change applies in their window at once and is saved there — dwell times, the line and its filters, ink, agents
+  (presets, add / remove / randomise, each agent's sliders), cursor, amplification, grid; the eye tracker's recentre and
+  5- / 9-dot calibrations; the hand's reach. The person sees "… adjusted your settings". So the carer can calibrate the
+  system for the person's needs, live.
+- **The drawing's proportions** are set by the first window; others fit them (with a quiet band around).
+- **Save Drawing** saves what everyone sees; the session keeps your own layer (Open restores it into your layer; an
+  opaque drawing from builds 16–17 is opened with its paper made transparent).
+- **Two windows of the same variant** keep apart settings and eye-tracker calibrations with `?seat=2`.
+- The start page opens variants in **new windows** (to drag to the second screen).
+
+### 18d
+- **Choose the camera** — on the first screen (when there are two or more) and in Configuration → Hand gestures — so
+  each window uses its own webcam. 18a chooses its camera in the eye-tracker settings.
+
+### Under the hood
+- `js/share.js` (the room), `js/marks.js` (ink as data); the engine paints every mark through `engine.mark()` and
+  reports whole-layer changes; the 2D surface is a transparent layer over a paper element (`Surface({ bg: null })`).
+- Settings under `inkwell18.*` (builds 16 and 17 untouched); IndexedDB `inkwell-18`.
+
+### Checked
+Two windows (18b + 18d in one browser, scripted input): meeting, colours, ink both ways (identical pixel counts at
+rest), cursors, undo, clear, clear-all, remote settings (menu dwell, line option — applied and saved in the other
+window), an agents preset, and the carer's agents editor (add, randomise all, remove, an agent's slider — the partner
+applies each and the carer's view follows), Configuration for a partner, leaving (6 s without a goodbye). 18a (with
+`?seat=2`) and 18c load; 18c still draws on its ring. Wired but not exercised: the eye tracker's remote recentre /
+calibrations and the hand's remote reach (they need a running tracker), the 18d camera menu (it needs two cameras).
+**Not yet** with two screens and two webcams.
+
 ## 17.1.0 — 2026-10-06 · two new hand gestures, tuned on a real recording
 
 Pedro Amado tried 17d and asked for two gestures; both were built and then **tuned on his own recording**

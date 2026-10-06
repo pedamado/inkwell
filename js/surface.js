@@ -1,7 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// INKWELL 17 — drawing surfaces + undo
+// INKWELL 18 — drawing surfaces + undo
 //   Surface      a raster "paper" in surface px, split into tiles (2D: one tile; VR: one tile per GPU texture).
 //                wrap: the surface is a ring (the 360° VR canvas): x wraps at `width`.
+//                bg null (18, 2D): a transparent layer — the paper is underneath, and other people's layers can be
+//                stacked with it (the shared drawing)
 //   draw(bbox, fn) runs fn(ctx) in SURFACE coordinates on every tile the bbox touches (and on the wrapped copy at the
 //                seam), records the touched cells for undo first, and marks the tiles dirty (VR texture uploads).
 //   Undo         per ACTION (a stroke, a grid segment): the cells (128 px) an action touches are copied before
@@ -38,7 +40,8 @@ export class Surface {
   paint() {
     for (const t of this.tiles) {
       t.ctx.setTransform(1, 0, 0, 1, 0, 0);
-      t.ctx.fillStyle = this.bg; t.ctx.fillRect(0, 0, t.canvas.width, t.canvas.height);
+      if (this.bg) { t.ctx.fillStyle = this.bg; t.ctx.fillRect(0, 0, t.canvas.width, t.canvas.height); }
+      else t.ctx.clearRect(0, 0, t.canvas.width, t.canvas.height);
       this._markAll(t);
     }
     this.version++;

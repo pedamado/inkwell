@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// INKWELL 17 — drawing engine (shared by 17a / 17b / 17c)
+// INKWELL 18 — drawing engine (shared by 18a / 18b / 18c)
 //
 //   Two levels of state (dossier §7.10: "arm, then act"):
 //     Draw mode   the central menu button: Press to Draw ⇄ Press to Pause (the pencil on / off the desk)
 //     The line    while Draw mode is on: starts with a DWELL on the canvas (or at once, if that toggle is off), stops
-//                 with the ESCAPE SACCADE (default), a dwell (off by default), a long blink (17a, off by default), or by
+//                 with the ESCAPE SACCADE (default), a dwell (off by default), a long blink (18a, off by default), or by
 //                 looking at the menu. No ink reservoir (v16): a line lasts until it is stopped.
 //   The pen     gaze → (amplification, pan: 2D) → 1€ filter per line option (in degrees) → agents (boids, default 1)
 //                or the direct pen (0 agents) → real-ink expression (speed → width, engorge, drips, splats; Rigid =
@@ -16,8 +16,9 @@
 // ═══════════════════════════════════════════════════════════════════════════
 import {
   LINE_MODES, LINE_ORDER, THICKNESS, THICKNESS_ORDER, COLORS, COLOR_ORDER, GRID_ORDER, PRESETS, PRESET_KEYS,
-  OneEuro, Boid, templateProps, randomizedProps, clamp, withAlpha, wrapDelta,
+  OneEuro, Boid, templateProps, randomizedProps, clamp, wrapDelta,
 } from './core.js';
+import { markBox, drawMark } from './marks.js';
 
 const STEP_MS = 1000 / 60;
 
@@ -122,7 +123,7 @@ export class Engine {
     this._log('line-stop', reason);
   }
   _liftAll() { for (const b of this.S.boids) b.last = null; this.S.pen.last = null; }
-  // the escape saccade (17a / 17b: InkGaze events; 17c: head flick). Only while a line is being drawn (the jump from
+  // the escape saccade (18a / 18b: InkGaze events; 18c: head flick). Only while a line is being drawn (the jump from
   // the menu to the canvas after Press to Draw is also a large saccade). Default: the line ends AND Draw mode goes back
   // to rest ("escape the drawing mode off"); with escapePauses off, Draw mode stays armed but the escape's landing point
   // cannot start the next line (the gaze must travel on first: no Midas touch where the eyes happened to land).
@@ -136,14 +137,14 @@ export class Engine {
     this.flash();
     return true;
   }
-  // a long (deliberate) blink toggles the line (17a, opt-in)
+  // a long (deliberate) blink toggles the line (18a, opt-in)
   blink(b) {
     if (!this.cfg.blinkToggle || !b || !b.long || !this.S.drawMode || this.S.overHud || this.gridMode) return false;
     if (this.S.penDown) { this.penUp('blink'); if (!this.cfg.dwellStart) this.toggleDraw(); } else this.penDown();
     return true;
   }
-  undo() { this.penUp('undo'); this.endGridLine(); if (this.surface.undoStep()) this._log('undo'); this.flash(); }
-  redo() { if (this.surface.redoStep()) this._log('redo'); this.flash(); }
+  undo() { this.penUp('undo'); this.endGridLine(); if (this.surface.undoStep()) { this._log('undo'); this._layer('undo'); } this.flash(); }
+  redo() { if (this.surface.redoStep()) { this._log('redo'); this._layer('redo'); } this.flash(); }
   clear() {
     this.penUp('clear'); this.endGridLine();
     try { this.surface.clear(); }
@@ -151,8 +152,14 @@ export class Engine {
       console.error('[inkwell] clear', e);
       const sf = this.surface; sf.action = null; sf.undo = []; sf.redo = []; sf.bytes = 0; sf.paint();
     }
-    this._log('clear'); this.flash();
+    this._log('clear'); this._layer('clear'); this.flash();
   }
+  // 18: one mark of ink — painted here and handed on (the shared drawing paints the same mark in the other windows)
+  mark(m) {
+    this.surface.draw(markBox(m), (c) => drawMark(c, m));
+    if (this.hooks.onInk) this.hooks.onInk(m);
+  }
+  _layer(why) { if (this.hooks.onLayer) this.hooks.onLayer(why); }   // 18: the whole layer changed (undo, redo, clear)
 
   // ---------------------------------------------------------------------------------------------- menu actions
   activate(id) {
@@ -268,7 +275,7 @@ export class Engine {
     const wantDwell = !S.penDown ? cfg.dwellStart : cfg.dwellStop;
     if (!wantDwell) { C.t = 0; return; }
     // 17: a canvas dwell that just fired needs the cursor to move away (2 radii) before the next one counts — with both
-    // dwell-start and dwell-stop on (17d), holding still no longer toggles the line on and off every 0.8 s
+    // dwell-start and dwell-stop on (18d), holding still no longer toggles the line on and off every 0.8 s
     if (C.leaveAt) { if (Math.hypot(p.x - C.leaveAt.x, p.y - C.leaveAt.y) > 2 * R) C.leaveAt = null; else { C.t = 0; return; } }
     if (S.penDown && !C.armedMove) {              // stopping needs the gaze to have travelled since the line began
       if (C.anchor && Math.hypot(p.x - C.anchor.x, p.y - C.anchor.y) > 2 * R) C.armedMove = true;
@@ -354,15 +361,10 @@ export class Engine {
     }
     const color = this.color;
     if (d >= 0.4) {
-      const x0 = p.last.x, y0 = p.last.y, x1 = p.x, y1 = p.y, pad = w / 2 + 2;
-      this.surface.draw([Math.min(x0, x1) - pad, Math.min(y0, y1) - pad, Math.max(x0, x1) + pad, Math.max(y0, y1) + pad], (c) => {
-        c.strokeStyle = color; c.lineWidth = w; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke();
-      });
+      this.mark({ t: 's', x0: p.last.x, y0: p.last.y, x1: p.x, y1: p.y, w, c: color });
       p.last = { x: p.x, y: p.y };
     } else if (primary && mode.expressive && !this.gridMode && S.eng > 0.05) {
-      // engorging in place: a growing blot
-      const x = p.x, y = p.y, rr = w / 2;
-      this.surface.draw([x - rr - 2, y - rr - 2, x + rr + 2, y + rr + 2], (c) => { c.fillStyle = color; c.beginPath(); c.arc(x, y, rr, 0, Math.PI * 2); c.fill(); });
+      this.mark({ t: 'b', x: p.x, y: p.y, r: w / 2, c: color });   // engorging in place: a growing blot
     }
     if (primary && mode.expressive && !this.gridMode) { this._drip(p, w, k, color); this._splat(p, k, color); }
   }
@@ -370,13 +372,7 @@ export class Engine {
     const S = this.S, cfg = this.cfg;
     if (!cfg.drips || p.speedMag() >= cfg.dripSpeed * k || S.now - S.lastDrip < cfg.dripInt) return;
     const len = (8 + Math.random() * 16) * k * (1 + S.eng), x = p.x, y = p.y, ex = x + (Math.random() - 0.5) * 2 * k, ey = y + len;
-    const lw = Math.max(2 * k, w * 0.9), rr = Math.max(1.5 * k, w * 0.55);
-    this.surface.draw([Math.min(x, ex) - lw - rr, y - lw, Math.max(x, ex) + lw + rr, ey + rr + 2], (c) => {
-      const g = c.createLinearGradient(x, y, ex, ey);
-      g.addColorStop(0, withAlpha(color, 1)); g.addColorStop(0.7, withAlpha(color, 0.8)); g.addColorStop(1, withAlpha(color, 0.3));
-      c.strokeStyle = g; c.lineWidth = lw; c.beginPath(); c.moveTo(x, y); c.lineTo(ex, ey); c.stroke();
-      c.beginPath(); c.arc(ex, ey, rr, 0, Math.PI * 2); c.fillStyle = withAlpha(color, 0.9); c.fill();
-    });
+    this.mark({ t: 'd', x, y, ex, ey, lw: Math.max(2 * k, w * 0.9), rr: Math.max(1.5 * k, w * 0.55), c: color });
     S.lastDrip = S.now;
   }
   _splat(p, k, color) {
@@ -385,16 +381,14 @@ export class Engine {
     if (!cfg.splats || dv < cfg.splatThr * k || p.speedMag() < 0.6 * k || S.now - S.lastSplat < cfg.splatInt) return;
     const sp = p.speedMag() || 1, ux = p.vx / sp, uy = p.vy / sp, px = -uy, py = ux;
     const r = this.widthRange(), w = r.min + (r.max - r.min) * 0.5;
-    const n = 3 + Math.floor(Math.random() * 4 * clamp(dv / (cfg.splatThr * k), 1, 3)), reach = w * 4.5, bx = p.x, by = p.y;
-    this.surface.draw([bx - reach - w, by - reach - w, bx + reach + w, by + reach + w], (c) => {
-      for (let i = 0; i < n; i++) {
-        const along = -w + Math.random() * (reach + w), perp = (Math.random() - 0.5) * w * 1.5;
-        const dx = ux * along + px * perp, dy = uy * along + py * perp;
-        const fade = Math.max(0, 1 - Math.hypot(dx, dy) / reach), rr = w * (0.18 + Math.random() * 0.22) * fade;
-        if (rr < 0.25) continue;
-        c.beginPath(); c.arc(bx + dx, by + dy, rr, 0, Math.PI * 2); c.fillStyle = withAlpha(color, fade * 0.85); c.fill();
-      }
-    });
+    const n = 3 + Math.floor(Math.random() * 4 * clamp(dv / (cfg.splatThr * k), 1, 3)), reach = w * 4.5, bx = p.x, by = p.y, dots = [];
+    for (let i = 0; i < n; i++) {   // the droplets are chosen once, here: every window paints the same ones
+      const along = -w + Math.random() * (reach + w), perp = (Math.random() - 0.5) * w * 1.5;
+      const dx = ux * along + px * perp, dy = uy * along + py * perp;
+      const fade = Math.max(0, 1 - Math.hypot(dx, dy) / reach), rr = w * (0.18 + Math.random() * 0.22) * fade;
+      if (rr >= 0.25) dots.push([bx + dx, by + dy, rr, fade * 0.85]);
+    }
+    if (dots.length) this.mark({ t: 'p', dots, box: [bx - reach - w, by - reach - w, bx + reach + w, by + reach + w], c: color });
     S.lastSplat = S.now;
   }
 
@@ -422,12 +416,7 @@ export class Engine {
       this._log('grid-start'); return;
     }
     if (G.last && G.last.x === node.x && G.last.y === node.y) { this.endGridLine(); this._log('grid-stop', 'dwell'); return; }
-    if (!this.S.boids.length) {
-      const a = G.last, w = this.widthRange().nom, color = this.color, pad = w / 2 + 2;
-      this.surface.draw([Math.min(a.x, node.x) - pad, Math.min(a.y, node.y) - pad, Math.max(a.x, node.x) + pad, Math.max(a.y, node.y) + pad], (c) => {
-        c.strokeStyle = color; c.lineWidth = w; c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(node.x, node.y); c.stroke();
-      });
-    }
+    if (!this.S.boids.length) this.mark({ t: 's', x0: G.last.x, y0: G.last.y, x1: node.x, y1: node.y, w: this.widthRange().nom, c: this.color });
     G.nodes.push(node); G.last = node;
   }
   endGridLine() { const G = this.S.grid; if (!G.active) return; G.active = false; G.nodes = []; G.last = null; this._liftAll(); this.surface.commit(); }

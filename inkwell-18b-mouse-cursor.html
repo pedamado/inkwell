@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <title>Inkwell 18b · mouse cursor</title>
+    <meta name="description" content="The Inkwell gaze drawing studio driven by the mouse pointer, with the same dwell and escape behaviours as the eye-tracker version. SiX research project.">
+<!--
+  Inkwell 18 — a prototype of the SiX research project «Drawing for Social Re-connectivity» (FBAUP · FCT 2023.11224.PEX),
+  PI Eliana Penedos-Santiago and the SiX team · https://six.fba.up.pt/
+  Interface, expressive line and drawing agents: Pedro Amado (FBAUP / i2ADS). Code written with Google Gemini and
+  Anthropic Claude (Inkwell 16–18: Claude Opus 5.5, October 2026). Full credits: README.md.
+  This work is financed by national funds through the Portuguese funding agency, FCT — Fundação para a Ciência e a
+  Tecnologia, within the project «2023.11224.PEX» [DOI 10.54499/2023.11224.PEX].
+-->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="lib/inkgaze.css?v=2.1.0">
+    <link rel="stylesheet" href="css/inkwell.css?v=18.0.0">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <meta name="theme-color" content="#faf9f7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+</head>
+<body>
+    <div id="stage"><div id="paper"></div></div>
+    <div id="screens"></div>
+    <canvas id="overlay" aria-hidden="true"></canvas>
+    <div id="orbit" hidden aria-hidden="true">
+        <div class="orbit-plane"></div>
+        <div class="orbit-hud">
+            <p class="orbit-title" data-i18n="orbit.title">3D analysis view · experimental</p>
+            <p data-i18n="orbit.keys">orbit o/l pitch · k/ç yaw · a/d roll · w/s zoom · p back</p>
+            <p class="orbit-readout">—</p>
+        </div>
+    </div>
+    <noscript><p style="padding:24px;font-family:monospace">Inkwell needs JavaScript (and a recent Chrome, Edge or Safari).</p></noscript>
+    <script src="lib/inkgaze.js?v=2.1.0"></script>
+    <script type="module">
+        import { boot } from './js/main.js?v=18.0.0';
+        boot('b');
+    </script>
+</body>
+</html>

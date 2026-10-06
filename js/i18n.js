@@ -1,13 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// INKWELL 17 — localisation (i18n)
+// INKWELL 18 — localisation (i18n)
 //   Languages are JSON files in i18n/. en.json is the reference (every key the app uses); any other language may be
 //   partial: a missing key falls back to English. i18n/languages.json lists the bundled languages.
 //   Users can add or correct a language without touching the server: Configuration → Language → "Load a language
 //   file…" keeps it in this browser, layered over a bundled language with the same code (corrections) or as a new one.
 //   t('hud.line.dynamic') · t('toast.saved', { png, json }) — a {placeholder} without a value is left as it is.
-//   The language is a person's preference: one choice for the four variants (localStorage 'inkwell17.lang').
+//   The language is a person's preference: one choice for the four variants (localStorage 'inkwell18.lang').
 // ═══════════════════════════════════════════════════════════════════════════
-const LS_LANG = 'inkwell17.lang', LS_CUSTOM = 'inkwell17.lang.custom';
+const LS_LANG = 'inkwell18.lang', LS_CUSTOM = 'inkwell18.lang.custom';
 const DIR = new URL('../i18n/', import.meta.url);
 let reg = { default: 'en', languages: [{ code: 'en', file: 'en.json', nativeName: 'English' }] };
 let en = {}, cur = {}, code = 'en', meta = {};
