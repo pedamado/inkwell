@@ -7,11 +7,18 @@
 //   Poses    from the 3D (world) landmarks — joint angles and distances in palm lengths, so they hold at any hand angle
 //            and distance — with hysteresis per finger:
 //              point · 1 index · 2 index + middle · 3 index + middle + ring (the pinky folded) · the thumb in or out ("L")
-//              fist (no long finger) · palm (the four long fingers) · other · none
+//              fist (no long finger) · palm (the four long fingers, palm to the camera) · back (the back of the hand to
+//              the camera) · other · none
 //            a new pose counts after poseStableMs (a thumb change 1.5 × that; a folding index first waits for a tap)
-//   Events   pose (the stable pose changed) · wave (an open hand, two swings ≥ waveMinSwing within waveWindowMs) ·
-//            tap (the index curls and straightens within 0.5 s, the hand still: a click where the curl began) ·
-//            reach (a 5-s sweep set the box) · status · frame
+//            17.1 (tuned on a real 2-minute recording of Pedro's hand, ~4 000 frames): the thumb is "out" when it is
+//            STRAIGHT (tucked, it bends: 0.82–0.92 vs 0.99 in every "L"); palm or back from the turn of the knuckle
+//            triangle in the image, signed by the hand's (voted) left / right
+//   Events   pose (the stable pose changed) · wave (the open palm, two swings ≥ waveMinSwing within waveWindowMs) ·
+//            pull (the back of the hand, the fingers folding toward you and opening again — undoPulls of them within
+//            pullWindowMs) · tap (the index curls and straightens within 0.42 s, the hand still: a click where the curl
+//            began) · reach (a 5-s sweep set the box) · status · frame
+//   17.1     the moment the pointing finger folds, the hand stops aiming (the line pauses at once, no dwell); the fist
+//            itself counts 0.42 s later (a tap, if the finger comes back sooner)
 // The camera image never leaves the device.
 // ═══════════════════════════════════════════════════════════════════════════
 import { OneEuro, TK, AGENT_RANGE, clamp, lerp } from './core.js';
@@ -23,12 +30,14 @@ export const HAND_MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_
 // so the fingertip reaches the menu (screen bottom) while the wrist is still in view
 export const DEFAULT_BOX = { x0: 0.18, x1: 0.82, y0: 0.12, y1: 0.66 };
 // extension score (0 curled … 1 straight): a finger counts as extended above `extend`, folded below `fold` (in between it
-// keeps its state); the thumb is out above `thumbOut` palm lengths from the index knuckle, in below `thumbIn`
-export const THRESH = { extend: 0.62, fold: 0.4, thumbOut: 0.8, thumbIn: 0.64 };
+// keeps its state). The thumb (17.1, from real data): out when straight (CMC → tip over its length ≥ `thumbOut`) and
+// away from the index knuckle (≥ `spreadOut` palm lengths); back in when it bends (≤ `thumbIn`) or tucks (≤ `spreadIn`).
+// The back of the hand faces the camera above `backOn` (signed turn of the knuckle triangle), and stops below `backOff`.
+export const THRESH = { extend: 0.62, fold: 0.4, thumbOut: 0.965, thumbIn: 0.945, spreadOut: 0.5, spreadIn: 0.45, backOn: 0.22, backOff: 0.1 };
 export const BONES = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12],
   [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [0, 17], [17, 18], [18, 19], [19, 20]];
 const LONG = { index: [5, 6, 7, 8], middle: [9, 10, 11, 12], ring: [13, 14, 15, 16], pinky: [17, 18, 19, 20] };
-const TAP_MIN_MS = 60, TAP_MAX_MS = 520, LOST_MS = 260, WAVE_COOLDOWN_MS = 1500;
+const TAP_MIN_MS = 60, TAP_MAX_MS = 420, LOST_MS = 260, WAVE_COOLDOWN_MS = 1500, PULL_COOLDOWN_MS = 900;
 
 // ---------------------------------------------------------------------------------------------- geometry + poses
 const sub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y, z: (a.z || 0) - (b.z || 0) });
@@ -45,26 +54,40 @@ export function fingerExtension(lm, [m, p, d, t]) {
   const reach = (dist(lm[0], lm[t]) - dist(lm[0], lm[p])) / (dist(lm[0], lm[m]) || 1);
   return (clamp(1 - (flex - 40) / 80, 0, 1) + clamp((straight - 0.6) / 0.32, 0, 1) + clamp((reach + 0.05) / 0.5, 0, 1)) / 3;
 }
-// the thumb away from the hand (the "L"): its tip ↔ the index knuckle, in palm lengths (tucked ≈ 0.3–0.6 · out ≈ 0.8–1.2)
+// the thumb away from the hand (the "L"): its tip ↔ the index knuckle, in palm lengths
 export function thumbSpread(lm) { return dist(lm[4], lm[5]) / (dist(lm[0], lm[9]) || 1); }
+// how straight the thumb is: base (CMC) → tip over the length of its bones (tucked ≈ 0.82–0.92 · an "L" ≈ 0.99)
+export function thumbStraight(lm) { return dist(lm[1], lm[4]) / ((dist(lm[1], lm[2]) + dist(lm[2], lm[3]) + dist(lm[3], lm[4])) || 1); }
+// which side of the hand faces the camera: the turn of the triangle wrist → index knuckle → little-finger knuckle in the
+// IMAGE (normalised, −1…1), signed by the hand's left / right (+1 'Right', −1 'Left' as MediaPipe labels it on the
+// camera's unmirrored frames): < 0 the palm, > 0 the back (measured: palm ≈ −0.4, back ≈ +0.5; edge-on ≈ 0)
+export function handFacing(img, handed) {
+  if (!img || !handed) return 0;
+  const ax = img[5].x - img[0].x, ay = img[5].y - img[0].y, bx = img[17].x - img[0].x, by = img[17].y - img[0].y;
+  return (ax * by - ay * bx) / ((Math.hypot(ax, ay) * Math.hypot(bx, by)) || 1) * handed;
+}
 
-export function poseOf(ext) {
+export function poseOf(ext, back = false) {
   const { index: i, middle: m, ring: r, pinky: p } = ext;
-  if (i && m && r && p) return { pose: 'palm', n: 4 };
+  if (i && m && r && p) return { pose: back ? 'back' : 'palm', n: 4 };
   if (!i && !m && !r && !p) return { pose: 'fist', n: 0 };
   if (i && !p && (m || !r)) return { pose: 'point', n: m ? (r ? 3 : 2) : 1 };
   return { pose: 'other', n: 0 };
 }
-// one frame (21 landmarks; world landmarks preferred) → finger states with hysteresis (prev: the previous frame) → pose
-export function classify(lm, prev = null, th = THRESH) {
+// one frame (21 landmarks; world landmarks preferred) → finger states with hysteresis (prev: the previous frame) → pose.
+// extra: { img (image landmarks), handed (+1 / −1) } for the palm / back side (without them an open hand is 'palm')
+export function classify(lm, prev = null, th = THRESH, extra = {}) {
   const ext = {}, score = {};
   for (const k of Object.keys(LONG)) {
     const e = fingerExtension(lm, LONG[k]); score[k] = e;
     ext[k] = prev ? (prev.ext[k] ? e > th.fold : e >= th.extend) : e >= (th.extend + th.fold) / 2;
   }
-  const s = thumbSpread(lm); score.thumb = s;
-  const thumb = prev ? (prev.thumb ? s > th.thumbIn : s >= th.thumbOut) : s >= (th.thumbOut + th.thumbIn) / 2;
-  return Object.assign({ ext, thumb, score }, poseOf(ext));
+  const st = thumbStraight(lm), sp = thumbSpread(lm); score.thumb = st; score.spread = sp;
+  const out = st >= th.thumbOut && sp >= th.spreadOut, tin = st <= th.thumbIn || sp <= th.spreadIn;
+  const thumb = prev ? (prev.thumb ? !tin : out) : (st >= (th.thumbOut + th.thumbIn) / 2 && sp >= (th.spreadOut + th.spreadIn) / 2);
+  const facing = handFacing(extra.img, extra.handed); score.facing = facing;
+  const back = prev && prev.back ? facing > th.backOff : facing > th.backOn;
+  return Object.assign({ ext, thumb, back, score }, poseOf(ext, back));
 }
 export const poseKey = (p) => (!p ? 'none' : p.pose === 'point' ? 'point' + p.n + (p.thumb ? '+thumb' : '') : p.pose);
 
@@ -120,6 +143,29 @@ export class WaveDetector {
   }
   get progress() { return this.swings.length; }
 }
+// "come back": the back of the hand to the camera, the fingers folding toward you, and open again — a pull. During the
+// fold the tracker often loses the hand for a moment (measured 0.1–0.3 s): that counts as folded. `need` pulls within
+// windowMs → true (an undo). A turn of the hand (back → palm → back) is not a pull: the fingers must fold or vanish.
+export class PullDetector {
+  constructor() { this.reset(); }
+  reset() { this.state = 'idle'; this.since = 0; this.foldT = 0; this.sawFold = false; this.pulls = []; }
+  feed(c, t, need = 2, windowMs = 2800) {
+    const open = !!c && c.pose === 'back', curled = !c || c.pose === 'fist' || c.pose === 'other' || c.pose === 'point';
+    if (this.state === 'idle') { if (open) { this.state = 'open'; this.since = t; } }
+    else if (this.state === 'open') {
+      if (!open) { if (t - this.since >= 120) { this.state = 'folded'; this.foldT = t; this.sawFold = curled; } else this.state = 'idle'; }
+    } else if (open) {   // folded → open again: a pull (re-armed at once for the next one)
+      const d = t - this.foldT;
+      if (this.sawFold && d >= 60 && d <= 1100) this.pulls.push(t);
+      this.state = 'open'; this.since = t - 120;
+    } else if (t - this.foldT > 1100) this.state = 'idle';
+    else if (curled) this.sawFold = true;
+    this.pulls = this.pulls.filter((p) => t - p <= windowMs);
+    if (this.pulls.length >= need) { this.pulls = []; return true; }
+    return false;
+  }
+  get progress() { return this.pulls.length; }
+}
 
 // ---------------------------------------------------------------------------------------------- MediaPipe
 let visionP = null;
@@ -156,7 +202,8 @@ export class HandInput {
     this.cfg = cfg; this.on = on;
     this.state = 'idle'; this.delegate = ''; this.fps = 0;
     this.video = null; this.stream = null; this.lm = null;
-    this.fx = new OneEuro(); this.fy = new OneEuro(); this.wave = new WaveDetector();
+    this.fx = new OneEuro(); this.fy = new OneEuro(); this.wave = new WaveDetector(); this.pull = new PullDetector();
+    this._vote = 0; this._pullT = -1e9;   // the hand's left / right, voted over frames (one misread frame never flips it)
     this.pose = null;          // the stable pose {pose, n, thumb} · null: no hand
     this.cls = null;           // the last frame's classification (finger states and scores)
     this.present = false; this.pointing = false; this.cursor = null; this.tip = null; this.img = null;
@@ -253,7 +300,10 @@ export class HandInput {
     const i = this._pick(res);
     if (i < 0) { this._absent(t); return; }
     const img = res.landmarks[i], w = res.worldLandmarks && res.worldLandmarks[i];
-    const c = classify(w && w.length === 21 ? w : img, this.present ? this.cls : null);
+    const hs = res.handedness || res.handednesses, hd = hs && hs[i] && hs[i][0];
+    if (hd) { const vote = (hd.categoryName === 'Right' ? 1 : -1) * (hd.score || 1); this._vote = this.present ? this._vote + (vote - this._vote) * 0.15 : vote; }
+    const handed = this._vote > 0.05 ? 1 : this._vote < -0.05 ? -1 : 0;
+    const c = classify(w && w.length === 21 ? w : img, this.present ? this.cls : null, THRESH, { img, handed });
     this.img = img;
     this._process(c, { x: 1 - img[8].x, y: img[8].y }, this._centre(img), { x: 1 - img[0].x, y: img[0].y }, t);
   }
@@ -261,14 +311,16 @@ export class HandInput {
   // px), the hand in the camera view (palmX; tipY: the fingertip, for the reach); indexOut false = the index is folded
   inject({ pose = null, n = 0, thumb = false, x = null, y = null, palmX = 0.5, tipY = 0.4, indexOut } = {}, t = performance.now()) {
     if (!pose) { this._absent(t, true); return; }
-    const io = indexOut != null ? indexOut : pose === 'point' || pose === 'palm';
-    const ext = { index: io, middle: pose === 'palm' || (pose === 'point' && n >= 2), ring: pose === 'palm' || (pose === 'point' && n >= 3), pinky: pose === 'palm' };
-    const c = Object.assign({ ext, thumb, score: { index: +io, middle: +ext.middle, ring: +ext.ring, pinky: +ext.pinky, thumb: thumb ? 1 : 0.4 } }, io || pose !== 'point' ? { pose, n } : poseOf(ext));
+    const open = pose === 'palm' || pose === 'back', io = indexOut != null ? indexOut : pose === 'point' || open;
+    const ext = { index: io, middle: open || (pose === 'point' && n >= 2), ring: open || (pose === 'point' && n >= 3), pinky: open };
+    const c = Object.assign({ ext, thumb, back: pose === 'back', score: { index: +io, middle: +ext.middle, ring: +ext.ring, pinky: +ext.pinky, thumb: thumb ? 1 : 0.9, spread: thumb ? 0.7 : 0.5, facing: pose === 'back' ? 0.5 : -0.4 } },
+      io || pose !== 'point' ? { pose, n } : poseOf(ext));
     this.img = null;
     this._process(c, { x: palmX, y: tipY }, { x: palmX, y: tipY + 0.1 }, { x: palmX, y: tipY + 0.22 }, t, x != null ? { x, y } : null);
   }
   _absent(t, now = false) {
     this.cls = null;
+    this.pull.feed(null, t, +this.cfg.undoPulls || 2, +this.cfg.pullWindowMs || 2800);   // a fold often loses the hand
     if (now || t - this._seenT > LOST_MS) {
       this.present = false; this.pointing = false; this.img = null; this._tap = null; this.wave.reset();
       this._candidate(null, t);
@@ -283,11 +335,13 @@ export class HandInput {
     this._cursor(tip, t, screen);
     this._tapStep(c, t, wrist);
     this._candidate({ pose: c.pose, n: c.n, thumb: c.thumb }, t, c);
-    if (c.pose === 'palm') {   // the wave, frame by frame (a misread frame or two is forgiven)
+    if (c.pose === 'palm') {   // the wave (the palm to the camera), frame by frame (a misread frame or two is forgiven)
       this._palmT = t;
       if (this.wave.feed(centre.x, t, +this.cfg.waveMinSwing || 0.1, +this.cfg.waveWindowMs || 1600) && t - this._waveT > WAVE_COOLDOWN_MS) { this._waveT = t; this._emit('wave'); }
     } else if (t - this._palmT > 300) this.wave.reset();
-    this.pointing = !!(this.pose && this.pose.pose === 'point');
+    // the pull (the back of the hand): undo
+    if (this.pull.feed(c, t, +this.cfg.undoPulls || 2, +this.cfg.pullWindowMs || 2800) && t - this._pullT > PULL_COOLDOWN_MS) { this._pullT = t; this._emit('pull'); }
+    this.pointing = !!(this.pose && this.pose.pose === 'point') && !!c.ext.index;   // a folding finger stops aiming at once
     this._frame(t);
   }
   _frame(t) {
@@ -336,13 +390,15 @@ export class HandInput {
     if (this.cfg.handTap === false || !this.pose || this.pose.pose !== 'point') { this._tap = null; return; }
     const T = this._tap;
     if (!T) {
-      if (!c.ext.index) { this._tap = { t0: t, at: this._ago(t, 90), wrist, n: 1 }; this.cursor = this._tap.at; }
+      if (!c.ext.index) { this._tap = { t0: t, at: this._ago(t, 90), wrist, n: 1, key: poseKey(this.pose) }; this.cursor = this._tap.at; }
       return;
     }
     if (!c.ext.index) { T.n++; if (t - T.t0 > TAP_MAX_MS) this._tap = null; return; }
     this._tap = null;
-    const dur = t - T.t0, still = Math.hypot(wrist.x - T.wrist.x, wrist.y - T.wrist.y) < 0.05;
-    if (T.n >= 2 && dur >= TAP_MIN_MS && dur <= TAP_MAX_MS && still && T.at) this._emit('tap', { x: T.at.x, y: T.at.y });
+    // 17.1: the hand must come back to the SAME pose (in the real recording, re-gripping — 1 finger → fist → 2 fingers —
+    // read as taps)
+    const dur = t - T.t0, still = Math.hypot(wrist.x - T.wrist.x, wrist.y - T.wrist.y) < 0.05, same = poseKey(c) === T.key;
+    if (T.n >= 2 && dur >= TAP_MIN_MS && dur <= TAP_MAX_MS && still && same && T.at) this._emit('tap', { x: T.at.x, y: T.at.y });
   }
   // a new pose counts once it has held poseStableMs (only the thumb changed: 1.5 ×; the index folding from a point:
   // TAP_MAX_MS, so a tap never reads as "rest")
@@ -353,13 +409,16 @@ export class HandInput {
     const st = this.pose;
     let need = +this.cfg.poseStableMs || 120;
     if (p && st && p.pose === st.pose && p.n === st.n) need *= 1.5;
+    // 17.1: from pointing to an open hand only after 0.3 s — in the real recording a hand held low and sideways read its
+    // little finger as open for 0.2–0.4 s; that must not pause a three-finger line (the wave reads raw frames: no delay)
+    if (p && st && st.pose === 'point' && (p.pose === 'palm' || p.pose === 'back')) need = Math.max(need, 300);
     if (st && st.pose === 'point' && c && !c.ext.index && this.cfg.handTap !== false) need = Math.max(need, TAP_MAX_MS);
     if (t - this._cand.t >= need) this._setPose(p);
   }
   _setPose(p) {
     const prev = this.pose;
     this.pose = p ? { pose: p.pose, n: p.n, thumb: !!p.thumb } : null;
-    this.pointing = !!(this.pose && this.pose.pose === 'point');
+    this.pointing = !!(this.pose && this.pose.pose === 'point') && !!(this.cls && this.cls.ext.index);
     if (this.pointing && this.state === 'ready') this._status('tracking', { delegate: this.delegate });
     this._emit('pose', this.pose, prev);
   }
@@ -411,7 +470,7 @@ export class HandInput {
     if (scores && cls) {   // thumb · index · middle · ring · pinky: how extended each one reads (red = counted as out)
       const keys = ['thumb', 'index', 'middle', 'ring', 'pinky'], bw = 7 * u, bh = 30 * u, gap = 4 * u, y = 8 * u;
       keys.forEach((k, i) => {
-        const val = k === 'thumb' ? clamp((cls.score.thumb - 0.4) / 0.8, 0, 1) : clamp(cls.score[k], 0, 1), x = w - 8 * u - (keys.length - i) * (bw + gap);
+        const val = k === 'thumb' ? clamp((cls.score.thumb - 0.85) / 0.15, 0, 1) : clamp(cls.score[k], 0, 1), x = w - 8 * u - (keys.length - i) * (bw + gap);
         c.fillStyle = 'rgba(250,249,247,0.8)'; c.fillRect(x - 1, y - 1, bw + 2, bh + 2);
         c.fillStyle = (k === 'thumb' ? cls.thumb : cls.ext[k]) ? TK.red : 'rgba(25,24,23,0.7)'; c.fillRect(x, y + bh * (1 - val), bw, bh * val);
       });

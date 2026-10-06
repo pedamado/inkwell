@@ -7,7 +7,8 @@
 //            states, saccades and escape saccades, so both variants share every interaction behaviour.
 //            17d (hands.js): the index fingertip is the cursor while a hand POINTS (a fist or an open hand never
 //            presses or inks); finger poses arm Draw mode and set the thickness, the thumb calls 1–5 random agents,
-//            a fist rests, an open-hand wave opens Clear Drawing, a finger tap clicks. Dwells work as with the eyes.
+//            a fist rests (17.1: the line stops the moment the finger folds), an open-palm wave opens Clear Drawing,
+//            the back of the hand pulled toward you undoes (17.1), a finger tap clicks. Dwells work as with the eyes.
 //   Studio   #paper (the surface canvas itself, panned with CSS) · #overlay (grid, agents, menu, reticle, on top of
 //            everything, pointer-events: none) · #screens (DOM screens) · the Configuration layer
 // ═══════════════════════════════════════════════════════════════════════════
@@ -153,7 +154,7 @@ export function runApp2D(variant) {
   async function ensureHands() {
     if (hands) return hands;
     HM = await import('./hands.js');
-    hands = new HM.HandInput({ cfg, on: { status: onHandStatus, pose: onHandPose, wave: onHandWave, tap: onHandTap, reach: onReachDone, frame: onHandFrame } });
+    hands = new HM.HandInput({ cfg, on: { status: onHandStatus, pose: onHandPose, wave: onHandWave, pull: onHandPull, tap: onHandTap, reach: onReachDone, frame: onHandFrame } });
     camEl = document.createElement('canvas'); camEl.id = 'handcam'; camEl.width = 320; camEl.height = 240; camEl.hidden = true;
     camEl.setAttribute('aria-hidden', 'true'); document.body.append(camEl);
     window.addEventListener('pagehide', () => { try { hands.destroy(); } catch (e) { /* closing */ } });
@@ -191,10 +192,11 @@ export function runApp2D(variant) {
     } else if (p && p.pose === 'fist') {    // a closed hand rests: the line stops, Draw mode off, the agents go
       engine.penUp('fist'); engine.endGridLine(); engine.setDrawMode(false);
       if (HS.thumb) { HS.thumb = false; direct(); }
-      chip(p);
+      if (!prev || prev.pose !== 'back') chip(p);   // (folds inside an undo pull are not announced)
     } else {
       engine.penUp(p ? p.pose : 'lost');
-      if (p && p.pose === 'palm') chip(p);
+      const undoShown = HS.chip && HS.chip.undo && performance.now() - HS.chip.t < 1500;   // keep "Undo" readable
+      if (p && (p.pose === 'palm' || (p.pose === 'back' && !undoShown))) chip(p);
     }
   }
   function orchestra() { const ps = HM.randomOrchestra(); cfg.boidCount = ps.length; engine.spawnBoids(ps); }
@@ -203,6 +205,7 @@ export function runApp2D(variant) {
   function chipText(p) {
     if (p.pose === 'fist') return t('hand.chip.rest');
     if (p.pose === 'palm') return t('hand.chip.palm');
+    if (p.pose === 'back') return t('hand.chip.back');
     const th = t('hud.thickness.' + THICK_BY_N[p.n]), n = engine.S.boids.length;
     return !p.thumb ? t('hand.chip.direct', { thickness: th }) : t(n === 1 ? 'hand.chip.agent' : 'hand.chip.agents', { thickness: th, n });
   }
@@ -212,6 +215,13 @@ export function runApp2D(variant) {
     engine.penUp('wave'); engine.endGridLine();
     engine.openModal({ type: 'clear' });
     toast(t('toast.waveClear'), 4600);
+  }
+  // 17.1: the back of the hand pulled toward you (undoPulls times, 2 by default) = Undo — your last line
+  function onHandPull() {
+    if (A.phase !== 'studio' || overlayOpen() || A.orbit || engine.S.modal) return;
+    engine.S.submenu = null;
+    engine.undo();
+    HS.chip = { text: t('hand.chip.undo'), t: performance.now(), undo: true };
   }
   // a finger tap = a click where the tap began (as the mouse click in 17b)
   function onHandTap(pt) {
@@ -532,14 +542,17 @@ export function runApp2D(variant) {
     }
   }
   // 17d: the hand is seen but does not point (a fist, an open hand): a small dotted ring — it neither presses nor inks.
-  // An open hand in the studio shows the wave's progress (a dot per swing; two open Clear Drawing).
+  // In the studio an open palm shows the wave's progress (a dot per swing; two open Clear Drawing), the back of the
+  // hand the pulls' progress (a dot per pull; undoPulls of them undo).
   function handRest(c, g, studio) {
     c.save(); c.setLineDash([2, 5]); c.lineWidth = 2; c.strokeStyle = 'rgba(25,24,23,0.32)';
     c.beginPath(); c.arc(g.x, g.y, 14, 0, Math.PI * 2); c.stroke(); c.restore();
     const p = hands && hands.pose;
-    if (studio && p && p.pose === 'palm') {
-      const k = hands.wave.progress;
-      for (let i = 0; i < 2; i++) { c.beginPath(); c.arc(g.x - 9 + i * 18, g.y + 28, 5, 0, Math.PI * 2); c.fillStyle = i < k ? TK.red : 'rgba(25,24,23,0.2)'; c.fill(); }
+    if (!studio || !p || (p.pose !== 'palm' && p.pose !== 'back')) return;
+    const back = p.pose === 'back', n = back ? clamp(Math.round(cfg.undoPulls || 2), 1, 3) : 2, k = back ? hands.pull.progress : hands.wave.progress;
+    for (let i = 0; i < n; i++) {
+      const x = g.x - (n - 1) * 9 + i * 18;
+      c.beginPath(); c.arc(x, g.y + 28, 5, 0, Math.PI * 2); c.fillStyle = i < k ? (back ? TK.ink : TK.red) : 'rgba(25,24,23,0.2)'; c.fill();
     }
   }
   // 17d: what a new pose did (thickness · direct or n agents · rest · wave to clear), beside the cursor for 1.8 s

@@ -1,6 +1,6 @@
 # Inkwell 17 — Product Requirements Document (PRD)
 
-**Product:** Inkwell — gaze drawing studio and its hand-gesture variant (build 17, `inkwell-17`) · **Version:** 17.0.0 · **Date:** 2026-10-06
+**Product:** Inkwell — gaze drawing studio and its hand-gesture variant (build 17, `inkwell-17`) · **Version:** 17.1.0 · **Date:** 2026-10-06
 **Project:** SiX — *Drawing for Social Re-connectivity* (FCT 2023.11224.PEX, PI Eliana Penedos-Santiago) · [six.fba.up.pt](https://six.fba.up.pt/)
 **A prototype of the [SiX](https://six.fba.up.pt/) research project**, PI Eliana Penedos-Santiago · **Interface, expressive line & drawing agents, prototype direction:** Pedro Amado (FBAUP / i2ADS) · **Code:** Claude Opus 5.5 (Anthropic) · full credits in the README
 **Predecessors:** Inkwell 16.1 (`inkwell-16/`; 17a–17c are its variants renamed) · Gaze Draw 12–15 (`gaze-draw-12/` …
@@ -143,6 +143,9 @@ on / feedback (ease-in 150 ms, ease-out 450 ms) / hidden.
 | R-H10 | Each new thumb-out **re-randomises** the number and the settings of the agents | a new `randomOrchestra()` on every in → out change |
 | R-H11 | **Open hand, palm to the camera, waved** with ≥ 2 direction changes (left → right → left) → the **Clear** modal; confirm by pointing + dwell or click | two swings ≥ `waveMinSwing` (10 % of the view) within `waveWindowMs` (1.6 s) → `openModal('clear')`; confirm by the 1.2-s dwell or a **finger tap** (curl + straighten ≤ 0.5 s = a click) |
 | R-H12 | (added) Only a pointing hand presses or inks; a fist rests | `aiming()`; fist → `penUp`, Draw mode off, no agents |
+| R-H13 | **(17.1)** A closed fist **pauses at once** — no dwell | aiming needs the index extended now: the line stops on the frame the finger folds; Draw mode off once the fist holds 0.42 s |
+| R-H14 | **(17.1)** The **back of the hand** to the camera, fingers up, **pulled toward the user** (a backward wave) → **Undo** | `PullDetector`: back-open → fold (or the hand lost a moment) → open within 1.1 s = a pull; 2 pulls within 2.8 s = one Undo (configurable) |
+| R-H15 | **(17.1)** The Clear wave is made with the **palm** to the camera | palm / back from the signed turn of the knuckle triangle × the voted left / right; only `palm` frames feed the wave |
 
 ### 5.5 The cursor (R-C) — from the HTC Vive app
 | ID | Requirement | Default |
@@ -203,7 +206,10 @@ controls are for a helper (mouse / keys).
 | 17d app, scripted hand frames: pointing → Draw + thin; 2 / 3 fingers → medium / thick mid-line; dwell start / pause, no re-toggle while still; thumb → 1–5 agents inking, a new set each time; thumb in → pause + direct; fist → rest; slow open-hand move → no wave; wave → Clear, confirmed by dwell; tap on Cancel and on a menu button; dwell on a submenu option; gate states; the reach sweep (box saved); Configuration | pass |
 | 17d agents: 6 000 random agents chasing a jumping, then circling target | pass (0 unstable) |
 | 17d model: HandLandmarker 0.10.35 loads (GPU) and runs at 6–9 ms a frame after the warm-up (first inference ≈ 6 s, during "Loading the hand model…") | pass (browser, no camera) |
-| 17a with a real webcam; 17c on a phone / headset; **17d with a real hand** (thresholds) | **pending** |
+| **17.1, real hand** — Pedro's recording (127 s, ~5 300 frames) through MediaPipe → the classifier: every "L" segment read as thumb-out (17.0: almost none), ≤ 1 % false thumb-out; palm ≈ −0.4 / back ≈ +0.5 | pass |
+| **17.1, real hand → the whole app**: pointing → Draw on, a dwell → a line, fist → Draw off, palm waves → Clear (2), back-of-hand pulls → Undo (3), no false Clear / Undo; 1 false tap (screen corner) | pass |
+| 17.1 scripted: the pen lifts on the first folded frame, Draw off at 0.42 s; two pulls → one undo | pass |
+| 17a with a real webcam; 17c on a phone / headset; 17d with other hands / cameras / light | **pending** |
 
 ## 12. Open questions / next
 - **17d with real hands:** tune `THRESH` (finger extension, thumb spread) from the preview's bars; decide whether "palm to

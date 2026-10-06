@@ -1,5 +1,33 @@
 # Inkwell — changelog
 
+## 17.1.0 — 2026-10-06 · two new hand gestures, tuned on a real recording
+
+Pedro Amado tried 17d and asked for two gestures; both were built and then **tuned on his own recording**
+(`Hands-gestures-mode.mp4`: 2 minutes of every gesture, run through MediaPipe — about 5 300 frames, 4 100 with a hand).
+
+- **Fist = pause at once.** The moment the pointing finger folds, the hand stops aiming: the line stops on the next
+  frame (no dwell); Draw mode goes off 0.42 s later, once the fist is sure (a finger tap — the finger back sooner — still
+  clicks).
+- **Back of the hand, pulled toward you = Undo.** The back of the hand to the camera, fingers up; fold the fingers toward
+  yourself and open them again — twice (a "come back" wave): your last line is undone. Each two more pulls undo one
+  more. Configuration → Hand gestures: pulls per undo (1–3, default 2) and their time (2.8 s). The tracker often loses
+  the hand for 0.1–0.3 s mid-fold (measured); that counts as part of the fold.
+- **Palm or back.** An open hand is now told apart: the turn of the triangle wrist → index knuckle → little-finger
+  knuckle in the image, signed by the hand's left / right (voted over frames). Measured: palm ≈ −0.4, back ≈ +0.5. The
+  **Clear wave now needs the palm** to the camera (the back of the hand waving never clears).
+- **The thumb ("L") reads reliably.** 17.0 measured the thumb's distance from the index knuckle; on the real hand an "L"
+  reached only 0.66–0.72 (threshold 0.80), so agents rarely appeared. 17.1 reads how **straight** the thumb is (tucked
+  0.82–0.92, every "L" 0.99) plus its distance (≥ 0.50): on the recording, 100 % of the "L" frames with 1, 2 or 3
+  fingers read as thumb-out, ≤ 1 % of the tucked-thumb frames.
+- **Steadier poses.** From pointing to an open hand only after 0.3 s (a hand held low and sideways read its little finger
+  as open for 0.2–0.4 s — that no longer pauses a three-finger line); a finger tap only counts when the hand returns to
+  the same pose (re-gripping from one finger to two no longer clicks).
+- Feedback: the back of the hand shows its pulls as dots under the cursor (as the wave shows its swings); "Undo" shows
+  beside the cursor.
+- **Checked on the recording, end to end** (the real frames driving the app): pointing → Draw on, a dwell → a thin line,
+  fist → Draw off, palm waves → Clear (twice), back-of-hand pulls → 3 undos, no false Clear or Undo elsewhere; all "L"
+  segments → agents; one false tap remained (at a screen corner, where nothing is pressed).
+
 ## 17.0.0 — 2026-10-06 · `inkwell-17` · 17d hand gestures
 
 Build 17 is build 16.1 in four variants: **17a eye tracker**, **17b mouse cursor**, **17c cardboard** (the same code and

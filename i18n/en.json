@@ -4,7 +4,7 @@
     "name": "English",
     "nativeName": "English",
     "dir": "ltr",
-    "version": "17.0.0",
+    "version": "17.1.0",
     "translators": "",
     "notes": "Reference language: it holds every key the app uses. To add a language, copy this file (e.g. es.json), set meta.code / meta.name / meta.nativeName, and translate the VALUES only: keep the keys, the {placeholders} and the HTML tags. Missing keys fall back to English. Then list the file in languages.json, or load it in the app: Configuration → Language → Load a language file."
   },
@@ -150,14 +150,17 @@
       "point1": "1 finger",
       "point2": "2 fingers",
       "point3": "3 fingers",
-      "thumb": "thumb"
+      "thumb": "thumb",
+      "back": "back of hand"
     },
     "chip": {
       "direct": "{thickness} · direct",
       "agent": "{thickness} · 1 agent",
       "agents": "{thickness} · {n} agents",
       "rest": "fist · rest",
-      "palm": "open hand · wave to clear"
+      "palm": "open hand · wave to clear",
+      "back": "back of hand · pull to undo",
+      "undo": "Undo"
     }
   },
   "toast": {
@@ -256,8 +259,9 @@
       "<li><b>Index + middle</b>: medium line. <b>Index + middle + ring</b>: thick line (the cursor stays on the index fingertip).</li>",
       "<li><b>Hold your fingertip still</b> (0.8 s) to start the line, and again to pause it. Held still on a button, it presses it — as the eyes do. Or <b>tap</b>: curl the finger and straighten it quickly.</li>",
       "<li><b>Thumb out</b> (an “L” with 1, 2 or 3 fingers): <b>agents</b> — 1 to 5 drawing agents with random settings draw with you, at the same thickness. <b>Thumb back in</b>: the line pauses, the agents go and the pen is direct again. Every new thumb-out brings a new random set.</li>",
-      "<li><b>Close your hand</b> (a fist): rest — the line stops and Draw mode goes off.</li>",
+      "<li><b>Close your hand</b> (a fist): the line <b>stops at once</b> (no dwell), and Draw mode goes off.</li>",
       "<li><b>Open hand, palm to the camera, waved</b> (left → right → left): <i>Clear the whole drawing?</i> opens. Confirm by pointing at <i>Clear</i> and holding still (or tap); <i>Cancel</i> keeps the drawing.</li>",
+      "<li><b>Back of the hand to the camera, fingers up, pulled toward you</b> — fold the fingers toward yourself and open them again, twice (a “come back” wave): <b>Undo</b>, your last line. Each two pulls undo one more.</li>",
       "<li>Keys: <kbd>c</kbd> calibrate the reach · <kbd>h</kbd> camera preview on/off.</li>",
       "</ul>",
       "<h3>Fine-tuning the Midas touch</h3>",
@@ -523,6 +527,14 @@
       "handPreview": {
         "label": "Camera preview",
         "help": "The small camera view at the top left: the hand, the reach box (dashed), how extended each finger reads (bars: thumb … little finger) and the pose. Key h."
+      },
+      "undoPulls": {
+        "label": "Pulls per undo",
+        "help": "The back of the hand to the camera, the fingers folding toward you and opening again: this many pulls undo your last line (2 by default, so a single fold never undoes)."
+      },
+      "pullWindowMs": {
+        "label": "Pull time",
+        "help": "The pulls must come within this time."
       }
     },
     "language": {
@@ -580,7 +592,7 @@
       "calibrate": "Calibrate reach",
       "reset": "Default reach",
       "resetDone": "The default reach is back.",
-      "help": "The reach (the dashed box in the camera preview) is the part of the camera view that covers the whole screen: calibrate it for each seat or person (key c). Poses: 1 finger = thin · 2 = medium · 3 = thick · thumb out = 1–5 agents · fist = rest · open hand waved = Clear Drawing."
+      "help": "The reach (the dashed box in the camera preview) is the part of the camera view that covers the whole screen: calibrate it for each seat or person (key c). Poses: 1 finger = thin · 2 = medium · 3 = thick · thumb out = 1–5 agents · fist = pause at once (rest) · open palm waved = Clear Drawing · back of the hand pulled toward you twice = Undo."
     },
     "data": {
       "reset": "Reset all to defaults",

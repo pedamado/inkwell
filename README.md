@@ -23,6 +23,9 @@ Build 17 is build 16.1 (*Gaze Draw* 12–15 under its new name) plus a fourth va
 > several angles, and the whole app driven by scripted hand frames) and the hand model loads and runs in the browser
 > (GPU, ~7 ms a frame); it has **not yet been used with a real hand in front of a webcam**: the pose thresholds may need
 > tuning in a first session (the camera preview shows how each finger reads). See [Status and limits](#status-and-limits).
+>
+> **17.1 (6 October 2026):** the fist pauses at once; the back of the hand pulled toward you undoes; the thumb ("L") and
+> palm / back are read from rules **tuned on a real 2-minute recording of Pedro's hand** — see the [CHANGELOG](CHANGELOG.md).
 
 ---
 
@@ -105,8 +108,9 @@ front of the webcam. The **index fingertip** is always the cursor, whatever the 
 | **Finger tap** (curl the pointing finger and straighten it within ½ s) | a **click** on the button under the cursor (also *Clear* in the confirmation) |
 | **Thumb out** (an "L" with 1, 2 or 3 fingers) | **agents**: 1 to 5 drawing agents with random (always stable) settings draw with you at the same thickness — a new random set every time the thumb comes out |
 | **Thumb back in** | the line **pauses**, the agents go, the pen is direct again |
-| **Fist** | **rest**: the line stops, Draw mode off |
+| **Fist** | **pause at once** (17.1: the line stops on the next frame, no dwell), then Draw mode off |
 | **Open hand, palm to the camera, waved** (left → right → left) | **Clear Drawing?** opens; confirm by pointing at *Clear* and holding still (1.2 s) or tapping; *Cancel* keeps the drawing |
+| **Back of the hand to the camera, pulled toward you twice** (fold the fingers toward yourself and open them again) | **Undo** (17.1): your last line; two more pulls, one more undo |
 
 - **Only a pointing hand presses or inks**: a fist or an open hand moving over the menu never triggers it.
 - **Reach.** The part of the camera view that covers the whole screen (the dashed box in the camera preview) is set by
@@ -152,7 +156,8 @@ Grouped in sections; every change is saved at once, for this variant only.
   (350 ms) and time, menu height, inverted aim.
 - **Eye tracker** (17a) — status, InkGaze settings, recentre, calibrate with 5 or 9 dots.
 - **Hand gestures** (17d) — camera status, **Calibrate reach**, **Default reach**, fingertip smoothing (1€), pose hold
-  (120 ms), finger tap on / off, wave size (10 % of the view) and time (1.6 s), camera preview on / off.
+  (120 ms), finger tap on / off, wave size (10 % of the view) and time (1.6 s), pulls per undo (2) and their time (2.8 s),
+  camera preview on / off.
 - **Settings** — reset to defaults, clear the saved settings, About, Help, the start screen.
 
 ### The cursor
@@ -250,11 +255,16 @@ drag) and computes the flick speed itself.
 - **the pose**, from the 3D world landmarks (rotation- and distance-independent): each long finger's extension score
   (bend at the middle and end joints, straightness, tip beyond the middle joint seen from the wrist; extended above
   0.62, folded below 0.40, hysteresis in between) and the thumb's spread (tip ↔ index knuckle in palm lengths: out above
-  0.80, in below 0.64) → `point` 1/2/3 (+ thumb), `fist`, `palm`, `other`; a new pose counts after `poseStableMs`
-  (a thumb change 1.5 ×; a folding index first waits 0.52 s for a tap);
+  0.80, in below 0.64 — **17.1:** the thumb is out when straight, CMC → tip over its length ≥ 0.965, and ≥ 0.50 palm
+  lengths from the index knuckle; in when ≤ 0.945 or ≤ 0.45) → `point` 1/2/3 (+ thumb), `fist`, `palm` / `back` (17.1:
+  the signed turn of the wrist–knuckle triangle in the image × the voted left / right; back above +0.22, off below
+  +0.10), `other`; a new pose counts after `poseStableMs` (a thumb change 1.5 ×; pointing → open hand 0.3 s; a folding
+  index first waits 0.42 s for a tap — but stops aiming at once);
 - **tap**: while pointing, the index folds for ≥ 2 frames and straightens within 60–520 ms, the wrist still (< 5 % of
   the view): a click where the fold began (the cursor holds there meanwhile);
-- **wave**: an open hand; a zig-zag on the palm's x — two swings of ≥ `waveMinSwing` within `waveWindowMs`.
+- **wave**: the open **palm**; a zig-zag on the palm's x — two swings of ≥ `waveMinSwing` within `waveWindowMs`;
+- **pull** (17.1): the **back** of the open hand, then a fold (fingers folding, or the hand lost for a moment) and back
+  open within 1.1 s; `undoPulls` of them within `pullWindowMs` → Undo.
 
 The app maps poses to the engine: a pointing onset → `setDrawMode(true)`; fingers → `setThickness`; thumb out →
 `spawnBoids(randomOrchestra())`, thumb in → `penUp` + no agents; fist → `penUp`, Draw off; wave → `openModal('clear')`;
@@ -303,8 +313,10 @@ hands.inject({ pose: 'point', n: 2, thumb: true, x: 500, y: 300 }, t);   // or h
 inkwell.step(2, 16.5);
 ```
 
-`hands.js` exports the pure parts for unit tests: `classify(landmarks)`, `fingerExtension`, `thumbSpread`, `poseOf`,
-`WaveDetector`, `boxFrom`, `randomOrchestra`, `agentStable`.
+`hands.js` exports the pure parts for unit tests: `classify(landmarks, prev, THRESH, { img, handed })`,
+`fingerExtension`, `thumbSpread`, `thumbStraight`, `handFacing`, `poseOf`, `WaveDetector`, `PullDetector`, `boxFrom`,
+`randomOrchestra`, `agentStable`. 17.1 was tuned by running MediaPipe over a real recording and replaying the landmarks
+through `HandInput.feed()` (in Node, and through the whole app in the browser).
 
 ---
 
@@ -339,11 +351,12 @@ From the project's *Research & Practice Dossier* (§7.7–§7.10) and the HTC Vi
   → pause + direct, fist → rest, slow open-hand moves → no wave, a wave → Clear, confirmed by dwell, Cancel and menu
   buttons by tap, the reach sweep, the gate states, Configuration); 6 000 random agents, all stable; the hand model
   loads (GPU) and runs at ~7 ms a frame after a warm-up.
+- **17d on a real hand (17.1):** Pedro's 2-minute recording (one person, one camera, one room) was run through the
+  classifier and the whole app: every pose and gesture read as performed, with one false tap (at a screen corner) and one
+  0.25-s pause from a misread little finger with the hand held low and sideways. Other hands, lighting and cameras are
+  still to be tried; the five bars in the camera preview show how each finger reads.
 - **Not yet tested on devices:** 17a with a real webcam session in Inkwell (InkGaze itself was tuned on two recordings);
-  17c on a phone in a Cardboard viewer and on a WebXR headset; **17d with a real hand**. The thresholds of the
-  classifier (finger extension 0.62 / 0.40, thumb spread 0.80 / 0.64) come from hand anatomy and synthetic hands: watch
-  the five bars in the camera preview during a first session and adjust in `hands.js` (`THRESH`) if a pose misreads.
-  "Palm to the camera" is not checked (any open hand waved counts); the Clear confirmation keeps a wrong wave harmless.
+  17c on a phone in a Cardboard viewer and on a WebXR headset.
 - The InkGaze window is English only. Phone performance of the 360° ring (8 textures of 675 × 1125 px) is untested.
 
 ## Credits

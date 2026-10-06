@@ -5,7 +5,7 @@
 // Full credits: README.md.
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const VERSION = '17.0.0';
+export const VERSION = '17.1.0';
 export const BUILD = 'inkwell-17';
 export const BUILD_NO = '17';
 export const STORE = 'inkwell17';      // localStorage prefix: build 17 keeps its own settings (16 is untouched)
@@ -137,8 +137,10 @@ export const DEFAULTS = {
   handSmooth: 0.5,        // 1€ smoothing of the fingertip (0 = raw, 1 = smoothest)
   poseStableMs: 120,      // a pose must hold this long before it counts (no flicker between poses)
   handTap: true,          // a finger tap (curl and straighten the index within 0.5 s) clicks the target under the cursor
-  waveMinSwing: 0.1,      // an open-hand wave: each swing at least this share of the camera width …
+  waveMinSwing: 0.1,      // an open-palm wave: each swing at least this share of the camera width …
   waveWindowMs: 1600,     // … and two swings (left → right → left) within this time open Clear Drawing
+  undoPulls: 2,           // 17.1: the back of the hand, fingers folding toward you and opening: this many pulls = Undo …
+  pullWindowMs: 2800,     // … within this time (measured on a real recording: a pull takes 0.6–1.3 s)
   handPreview: true,      // the small camera preview (hand skeleton, reach box, finger scores, pose)
 
   agents: null,           // the agents' own settings (CRUD in Configuration), saved with the rest

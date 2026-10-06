@@ -291,6 +291,8 @@ const SECTIONS = [
     { k: 'handTap', t: 'check' },
     { k: 'waveMinSwing', t: 'range', min: 0.04, max: 0.3, step: 0.01, fmt: pct },
     { k: 'waveWindowMs', t: 'range', min: 600, max: 3000, step: 100, unit: 'ms' },
+    { k: 'undoPulls', t: 'range', min: 1, max: 3, step: 1 },
+    { k: 'pullWindowMs', t: 'range', min: 1200, max: 5000, step: 100, unit: 'ms' },
     { k: 'handPreview', t: 'check' },
   ] },
   { key: 'data', custom: 'data' },

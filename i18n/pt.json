@@ -4,7 +4,7 @@
     "name": "Portuguese",
     "nativeName": "Português",
     "dir": "ltr",
-    "version": "17.0.0",
+    "version": "17.1.0",
     "translators": "Claude Opus 5.5 (português europeu) — a rever",
     "notes": "Português europeu. Traduza apenas os VALORES: mantenha as chaves, os {marcadores} e as etiquetas HTML. As chaves em falta são mostradas em inglês."
   },
@@ -150,14 +150,17 @@
       "point1": "1 dedo",
       "point2": "2 dedos",
       "point3": "3 dedos",
-      "thumb": "polegar"
+      "thumb": "polegar",
+      "back": "costas da mão"
     },
     "chip": {
       "direct": "{thickness} · direta",
       "agent": "{thickness} · 1 agente",
       "agents": "{thickness} · {n} agentes",
       "rest": "punho · repouso",
-      "palm": "mão aberta · acene para limpar"
+      "palm": "mão aberta · acene para limpar",
+      "back": "costas da mão · puxe para desfazer",
+      "undo": "Desfazer"
     }
   },
   "toast": {
@@ -256,8 +259,9 @@
       "<li><b>Indicador + médio</b>: linha média. <b>Indicador + médio + anelar</b>: linha grossa (o cursor fica sempre na ponta do indicador).</li>",
       "<li><b>Mantenha a ponta do dedo parada</b> (0,8 s) para começar a linha, e de novo para a pausar. Parada sobre um botão, prime-o — como os olhos. Ou <b>toque</b>: dobre o dedo e estique-o depressa.</li>",
       "<li><b>Polegar de fora</b> (um «L» com 1, 2 ou 3 dedos): <b>agentes</b> — 1 a 5 agentes de desenho com definições aleatórias desenham consigo, com a mesma espessura. <b>Polegar recolhido</b>: a linha pausa, os agentes desaparecem e o traço volta a ser direto. Cada vez que o polegar sai, há um novo conjunto aleatório.</li>",
-      "<li><b>Feche a mão</b> (punho): repouso — a linha para e o modo de desenho desliga-se.</li>",
+      "<li><b>Feche a mão</b> (punho): a linha <b>para de imediato</b> (sem esperar) e o modo de desenho desliga-se.</li>",
       "<li><b>Mão aberta, palma para a câmara, a acenar</b> (esquerda → direita → esquerda): abre-se <i>Limpar todo o desenho?</i>. Confirme apontando para <i>Limpar</i> e ficando parado (ou toque); <i>Cancelar</i> mantém o desenho.</li>",
+      "<li><b>Costas da mão viradas para a câmara, dedos para cima, puxadas na sua direção</b> — dobre os dedos para si e abra-os de novo, duas vezes (um aceno de «vem cá»): <b>Desfazer</b>, a sua última linha. Cada dois puxões desfazem mais uma.</li>",
       "<li>Teclas: <kbd>c</kbd> calibrar o alcance · <kbd>h</kbd> pré-visualização da câmara sim/não.</li>",
       "</ul>",
       "<h3>Afinar o «toque de Midas»</h3>",
@@ -523,6 +527,14 @@
       "handPreview": {
         "label": "Pré-visualização da câmara",
         "help": "A pequena imagem da câmara, em cima à esquerda: a mão, a caixa de alcance (tracejada), quanto cada dedo parece estendido (barras: polegar … mindinho) e a posição. Tecla h."
+      },
+      "undoPulls": {
+        "label": "Puxões para desfazer",
+        "help": "As costas da mão viradas para a câmara, os dedos a dobrar na sua direção e a abrir de novo: este número de puxões desfaz a sua última linha (2 por omissão, para que uma só dobra nunca desfaça)."
+      },
+      "pullWindowMs": {
+        "label": "Tempo dos puxões",
+        "help": "Os puxões têm de acontecer dentro deste tempo."
       }
     },
     "language": {
@@ -580,7 +592,7 @@
       "calibrate": "Calibrar o alcance",
       "reset": "Alcance predefinido",
       "resetDone": "Voltou o alcance predefinido.",
-      "help": "O alcance (a caixa tracejada na pré-visualização) é a parte da imagem da câmara que cobre o ecrã inteiro: calibre-o para cada lugar ou pessoa (tecla c). Posições: 1 dedo = fina · 2 = média · 3 = grossa · polegar de fora = 1–5 agentes · punho = repouso · mão aberta a acenar = Limpar Desenho."
+      "help": "O alcance (a caixa tracejada na pré-visualização) é a parte da imagem da câmara que cobre o ecrã inteiro: calibre-o para cada lugar ou pessoa (tecla c). Posições: 1 dedo = fina · 2 = média · 3 = grossa · polegar de fora = 1–5 agentes · punho = pausa imediata (repouso) · palma aberta a acenar = Limpar Desenho · costas da mão puxadas na sua direção duas vezes = Desfazer."
     },
     "data": {
       "reset": "Repor todas as predefinições",
