@@ -1,6 +1,6 @@
 # Inkwell 18 — Product Requirements Document (PRD)
 
-**Product:** Inkwell — gaze drawing studio, its hand-gesture variant, and drawing together (build 18, `inkwell-18`) · **Version:** 18.0.0 · **Date:** 2026-10-06
+**Product:** Inkwell — gaze drawing studio, its hand-gesture variant, and drawing together (build 18, `inkwell-18`) · **Version:** 18.1.0 (18.1: view size) · **Date:** 2026-10-06
 **Project:** SiX — *Drawing for Social Re-connectivity* (FCT 2023.11224.PEX, PI Eliana Penedos-Santiago) · [six.fba.up.pt](https://six.fba.up.pt/)
 **A prototype of the [SiX](https://six.fba.up.pt/) research project**, PI Eliana Penedos-Santiago · **Interface, expressive line & drawing agents, prototype direction:** Pedro Amado (FBAUP / i2ADS) · **Code:** Claude Opus 5.5 (Anthropic) · full credits in the README
 **Predecessors:** Inkwell 17.1 (`inkwell-17/`: 16.1 + the hand-gesture variant; 18a–18d are its variants renamed) · Inkwell 16.1 (`inkwell-16/`) · Gaze Draw 12–15 (`gaze-draw-12/` …
@@ -162,6 +162,16 @@ on / feedback (ease-in 150 ms, ease-out 450 ms) / hidden.
 | R-T6 | (added) Each window uses its own camera | 18d: camera menu on the first screen and in Configuration (`handCameraId`); 18a: InkGaze's camera choice; seats (`?seat=2`) keep two windows of the same variant apart |
 | R-T7 | (added) One drawing everywhere | the oldest window's proportions are adopted (letterboxed); Save = what everyone sees (PNG), the session = your layer |
 
+### 5.8 View size (R-Z) — 18.1
+| ID | Requirement (Pedro Amado, 6 Oct 2026) | Implementation |
+|---|---|---|
+| R-Z1 | The design assumed the user **1 m from the canvas** (the 1 × 1 m canvas at 1 m, ≈ 53°, menu coplanar — *Visual Interface Guidelines — VR settings*; requirements matrix C1: 0.5–1.5 m) and derived the rest from it. People sit nearer or farther, or shift in the room: a **customisable scalar for the canvas**, default ×1.0, as if nearer / farther | `canvasScale` ×0.5–×2 (as at 2–0.5 m; readout "as at … m"). 2D: the paper zooms about the window's centre (`Z`); 18c: what is on the ring grows (`engine.ppd = 12 × size`) |
+| R-Z2 | A **scalar for the menu** — buttons, labels, hit areas, etc. — like an accessibility feature | `menuScale` ×0.5–×2: `HUD.layout` × size (never wider than the window; `L.menuMax`), the screens and messages (CSS zoom, capped by the window), 18c the menu and welcome panels; the Configuration keeps its size |
+| R-Z3 | Both at once (**a toggle locking the two sliders**) or independently | `scaleLink` (on): the other size moves by the same factor (each within ×0.5–×2) |
+| R-Z4 | Usable by a **caregiver or a developer** | Configuration → View size (every variant); from a carer's window via *Settings of* (both values sent); keys `+` `−` `0` |
+| R-Z5 | Only if it can be added **without changing the existing default** | at ×1 nothing is applied: identical to 18.0 in pixels, layouts and hit-testing (§11) |
+| R-Z6 | (added) The eyes' tolerances do not depend on the canvas | `engine.eyePpd` (view degrees) for the canvas-dwell radius, the re-arm distance and the 1€ filter; `engine.ppd` (canvas degrees) for ink, drips, splats and the grid |
+
 ### 5.5 The cursor (R-C) — from the HTC Vive app
 | ID | Requirement | Default |
 |---|---|---|
@@ -171,7 +181,7 @@ on / feedback (ease-in 150 ms, ease-out 450 ms) / hidden.
 | R-C4 | The canvas-dwell progress arc shows whenever a dwell fills (feedback, not a cursor) | — |
 
 ## 6. Configuration (R-K)
-Everything from build 15 except the ink economy, in sections: Language · Activation · Cursor · Line · Ink behaviour ·
+Everything from build 15 except the ink economy, in sections: Language · **View size (18.1)** · Activation · Cursor · Line · Ink behaviour ·
 Agents · Amplification & pan (17a/17b/17d) · Grid · VR (17c) · Eye tracker (17a) · **Hand gestures (17d)**: camera status,
 Calibrate reach, Default reach, fingertip smoothing, pose hold, finger tap, wave size and time, camera preview ·
 Settings (reset, clear saved, About, Help, start screen). The close button and the scroll arrows are gaze targets; the
@@ -226,13 +236,20 @@ controls are for a helper (mouse / keys).
 | 17.1 scripted: the pen lifts on the first folded frame, Draw off at 0.42 s; two pulls → one undo | pass |
 | **18.0** — two windows (18b + 18d, one browser, scripted input): meeting, colours, ink both ways (identical pixel counts at rest), cursors, undo, clear, clear-all, remote settings and agents (preset, editor) applied and saved in the partner's window, Configuration for a partner, leaving | pass |
 | 18.0 — 18a (`?seat=2`: own settings and calibration key) and 18c load; 18c draws on its ring after the marks refactor | pass |
-| 18a with a real webcam; 18c on a phone / headset; 18d with other hands / cameras / light; **18 with two screens and two webcams** | **pending** |
+| **18.1 — ×1 = 18.0:** the same scripted gaze path, pinned clock, seeded randomness → identical ink pixels, menu overlay (hover, open submenu), paper transforms, pen and agents; `HUD.layout` / `submenuLayout` / `modalLayout` / hit-testing identical over 416 window × allowance combinations and the VR layout | pass |
+| 18.1 — 18b canvas ×1.25 / ×0.75 / ×1.4 (gaze → surface under the cursor; dwell radius constant on the screen; band below ×1); link (local; remote: both values once, saved); menu-bar limit + note; screens' zoom + limit (×2 → ×1.51 in 1024 × 768); keys `+` `−` `0`; 18a / 18c / 18d load clean | pass |
+| 18.1 — 18c canvas ×1.5 (medium line 0.60°, grid 4.5°, head dwell tolerance 12 px/°); menu ×1.5 (panels ×1.5, a dwell on the larger Draw button fires) | pass (desktop preview) |
+| 18a with a real webcam; 18c on a phone / headset; 18d with other hands / cameras / light; **18 with two screens and two webcams**; **18.1 sizes with people** | **pending** |
 
 ## 12. Open questions / next
 - **17d with real hands:** tune `THRESH` (finger extension, thumb spread) from the preview's bars; decide whether "palm to
   the camera" must be checked (handedness) for the wave; the default reach box for a seated carer.
 - **18 in use:** two screens, two webcams, 18a + 18d — the partner-cursor modes for a gaze user (hidden, faint, only
   while the partner pauses), turn-taking, a shared Clear that both confirm.
+- **View size (18.1):** which sizes people choose and where they sit; on a laptop the one-row menu bar can grow only to
+  ×1.02–×1.15 — a two-row or vertical menu for large sizes (the dossier's "vertical, not horizontal" decision); in 18c
+  the menu bar spans ±27° at ×1 (the guidelines' primary zone is a 30° arc, ±15°) — reconsider its width or its distance
+  (1.25 m, while the ring is at 2.6 m: not the coplanar 1 m plane of the guidelines).
 - **Beyond one computer:** the SSE / POST relay (PHP on the LAMP host or MAMP; Python on the Mac) from the research note,
   on the same protocol — the transport is the only new part.
 - Validate 17a end to end with participants (S3b) and compare dwell-start vs settle-start, escape-to-rest vs keep-armed.

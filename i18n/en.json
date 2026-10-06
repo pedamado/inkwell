@@ -192,7 +192,8 @@
     "left": "{name} left the drawing.",
     "colour": "Your colour in the shared drawing: {color}.",
     "remoteSet": "{name} adjusted your settings.",
-    "sameSeat": "Another window uses {variant} with the same settings: add ?seat={seat} to this window’s address to keep them apart."
+    "sameSeat": "Another window uses {variant} with the same settings: add ?seat={seat} to this window’s address to keep them apart.",
+    "view": "Canvas ×{canvas} · menu ×{menu}"
   },
   "about": {
     "title": "About Inkwell",
@@ -272,10 +273,12 @@
       "<li><b>Back of the hand to the camera, fingers up, pulled toward you</b> — fold the fingers toward yourself and open them again, twice (a “come back” wave): <b>Undo</b>, your last line. Each two pulls undo one more.</li>",
       "<li>Keys: <kbd>c</kbd> calibrate the reach · <kbd>h</kbd> camera preview on/off.</li>",
       "</ul>",
+      "<h3>View size (18.1)</h3>",
+      "<p>Configuration → <i>View size</i>: the <b>canvas size</b> and the <b>menu size</b>, ×0.5 to ×2 (×1 = as designed: the canvas at 1 m). Larger is as if nearer, smaller as if farther — for a person who sits farther or nearer than planned, or a headset that sits differently. Linked, both move together; unlinked, each on its own (the menu as an accessibility zoom). A carer can set them from their own window (Settings of → that person). Keys: <kbd>+</kbd>/<kbd>−</kbd> canvas (and menu, when linked) · <kbd>0</kbd> both back to ×1.</p>",
       "<h3>Fine-tuning the Midas touch</h3>",
       "<p>In Configuration → Activation: the menu dwell (0.8 s), the canvas dwell, the exit grace, the target allowance (invisible extra hit area), the settle speed, and the escape size. If things fire by themselves, raise the dwell; if they feel slow, lower it.</p>",
       "<h3>Keyboard / controller (helpers)</h3>",
-      "<p><kbd>q</kbd> draw on/off · <kbd>w</kbd>/<kbd>s</kbd> thickness · <kbd>a</kbd>/<kbd>d</kbd> line option · <kbd>o</kbd>/<kbd>l</kbd> colour · <kbd>k</kbd>/<kbd>ç</kbd> undo/redo · <kbd>e</kbd>×2 clear · <kbd>g</kbd> grid · <kbd>i</kbd>/<kbd>p</kbd> 3D view on/off · <kbd>r</kbd> recentre the canvas · <kbd>c</kbd> recentre the eye tracker (18a) or calibrate the reach (18d) · <kbd>h</kbd> camera preview (18d) · <kbd>f</kbd> full screen · <kbd>Esc</kbd> close / eye-tracker settings.</p>",
+      "<p><kbd>q</kbd> draw on/off · <kbd>w</kbd>/<kbd>s</kbd> thickness · <kbd>a</kbd>/<kbd>d</kbd> line option · <kbd>o</kbd>/<kbd>l</kbd> colour · <kbd>k</kbd>/<kbd>ç</kbd> undo/redo · <kbd>e</kbd>×2 clear · <kbd>g</kbd> grid · <kbd>i</kbd>/<kbd>p</kbd> 3D view on/off · <kbd>r</kbd> recentre the canvas · <kbd>c</kbd> recentre the eye tracker (18a) or calibrate the reach (18d) · <kbd>h</kbd> camera preview (18d) · <kbd>f</kbd> full screen · <kbd>Esc</kbd> close / eye-tracker settings · <kbd>+</kbd>/<kbd>−</kbd> view size · <kbd>0</kbd> view ×1.</p>",
       "<h3>Drawing together (18)</h3>",
       "<ul>",
       "<li>Open a <b>second window</b> of this browser (⌘N or Ctrl+N) with another variant and move it to the other screen — e.g. <b>18a</b> for the person drawing with the eyes, <b>18d</b> for the carer drawing with the hand. Each window uses its own camera (18d: the camera menu on its first screen; 18a: the eye-tracker settings). They join by themselves — no network is used.</li>",
@@ -317,6 +320,7 @@
     "sub": "{variant} · saved in this browser for this variant",
     "sections": {
       "language": "Language",
+      "view": "View size — canvas and menu (as if nearer or farther)",
       "share": "Shared drawing",
       "activation": "Activation — dwell, escape, blink (the Midas touch)",
       "cursor": "Cursor (where you look)",
@@ -567,6 +571,18 @@
       "showPartners": {
         "label": "Show the others’ cursors",
         "help": "A ring in their colour with their name. For a person drawing with the eyes, a moving cursor can pull the eyes: switch it off in their window (Settings of → that person)."
+      },
+      "canvasScale": {
+        "label": "Canvas size",
+        "help": "The canvas and everything on it — the ink, the grid, the agents — as if nearer (> ×1) or farther (< ×1). The design assumes the 1 × 1 m canvas at 1 m (≈ 53°): ×1.25 shows it as at 0.80 m, ×0.80 as at 1.25 m (the requirements’ comfortable band is 0.5–1.5 m). The eyes’ own tolerances (the dwell radius, the smoothing) stay the same. Larger than the window: turn on the assistive pan to reach the edges (or drag with the right button). 18c: the canvas is a 360° ring with no edge to grow, so the ink, the grid and the agents grow instead."
+      },
+      "menuScale": {
+        "label": "Menu size",
+        "help": "The menu — its buttons, icons, labels and hit areas, the submenus and the Clear / Open dialogs — and the screens (start, intro dots, welcome, About, Help), as an accessibility zoom. This Configuration keeps its size, so it can always be undone. On a screen the menu never grows wider than the window."
+      },
+      "scaleLink": {
+        "label": "Link the two sizes",
+        "help": "Moving one size moves the other by the same factor (each within ×0.5–×2). Off: each on its own."
       }
     },
     "language": {
@@ -653,6 +669,10 @@
       "me": "this window — {name}"
     },
     "subRemote": "{name} — every change applies in that window at once, and is saved there",
+    "view": {
+      "asIf": "as at {m} m",
+      "capped": "the menu bar fits up to ×{k} in this window"
+    },
     "remote": {
       "footer": "{key} · changed and saved in that person’s window.",
       "trackerHelp": "These buttons act in that person’s window (a recentre or a calibration starts there, on their screen).",

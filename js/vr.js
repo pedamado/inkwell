@@ -8,16 +8,20 @@
 //   the corners (the whole view always fits: no cropping), and the views are rebuilt on every resize / rotation
 //   (the causes of build 15's cropping: no resize after rotating to landscape, distortion pushing the edges out, a UV
 //   shift for the IPD — here the IPD is a real camera separation).
+//   View size (18.1): the ring has no edge to grow, so the CANVAS size scales what is on it — the ink, the grid, the
+//   agents (engine.ppd = ppd × size; the head's dwell tolerance stays in degrees: engine.eyePpd = ppd); the MENU size
+//   scales the menu panel, the welcome panel and the intro dots (and the DOM pages, as in 2D).
 //   three.js 0.160.0 (import map in the page). Same engine, menu, sessions and settings as 18a / 18b.
 // ═══════════════════════════════════════════════════════════════════════════
 import * as THREE from 'three';
 import {
   VERSION, TK, loadSettings, saveSettings, defaultsFor, settingsKey, storage, deepMerge, setPath, clamp, easeInOut, wrapDelta, unlockAudio, chime, withAlpha,
+  viewScale, linkedScale,
 } from './core.js';
 import { Surface } from './surface.js';
 import { Engine } from './engine.js';
 import * as HUD from './hud.js';
-import { GazeDom, toast, showGate, showAbout, showHelp, openConfig, agentsEditor, variantTitle, variantName } from './ui.js';
+import { GazeDom, toast, showGate, showAbout, showHelp, openConfig, agentsEditor, variantTitle, variantName, menuScaleDom } from './ui.js';
 import { t, onLanguage, setLanguage, langMeta, languages, lang } from './i18n.js';
 import { saveSession, recentSessions, pickSessionFile, parseSession, applySession } from './sessions.js';
 
@@ -161,13 +165,26 @@ export function runVR(variant) {
   const hud = makePanel(HUD_W, HUD_H, HUD_ANG, HUD_DIST);
   const hudPivot = new THREE.Object3D(); scene.add(hudPivot); hudPivot.add(hud.mesh);
   let L = null;
-  function layoutHud() {
+  function layoutHud() {   // 18.1: × the menu size (the panel grows about the bar's centre, which stays at hudPitchDeg)
     L = HUD.layout(HUD_W, HUD_H, cfg, { scale: 1.2, fontScale: 1.6 });
+    const m = viewScale(cfg.menuScale);
     const p = cfg.hudPitchDeg * D2R, barC = new THREE.Vector3(0, Math.sin(p) * HUD_DIST, -Math.cos(p) * HUD_DIST);
     const up = new THREE.Vector3(0, Math.cos(p), Math.sin(p)), dyPx = (L.barY + L.barH / 2) - HUD_H / 2;
-    hud.mesh.position.copy(barC).addScaledVector(up, (dyPx / HUD_H) * hud.hm);
+    hud.mesh.position.copy(barC).addScaledVector(up, (dyPx / HUD_H) * hud.hm * m);
     hud.mesh.rotation.set(p, 0, 0);
+    hud.mesh.scale.setScalar(m);
+    splash.panel.mesh.scale.setScalar(m);
     hud.sig = '';
+  }
+  // 18.1: the view size — the canvas (what is on the ring) and the menu
+  function applyView() {
+    engine.ppd = ppd * viewScale(cfg.canvasScale); engine.eyePpd = ppd;
+    gridDirty = true; layoutHud(); menuScaleDom(cfg.menuScale);
+  }
+  function nudgeView(dir) {   // + / − (both sizes when linked) · 0 (both back to ×1)
+    if (dir === 0) { onCfgChange('canvasScale', 1); if (cfg.menuScale !== 1) onCfgChange('menuScale', 1); }
+    else onCfgChange('canvasScale', Math.round(viewScale(cfg.canvasScale + dir * 0.05) * 100) / 100);
+    toast(t('toast.view', { canvas: viewScale(cfg.canvasScale).toFixed(2), menu: viewScale(cfg.menuScale).toFixed(2) }), 2200);
   }
 
   // ---------------------------------------------------------------------------------------------- the reticle
@@ -199,7 +216,6 @@ export function runVR(variant) {
   engine.spawnBoids(Array.isArray(cfg.agents) && cfg.agents.length === cfg.boidCount ? cfg.agents : null);
   agentsToCfg();
   engine.S.target = { x: 0, y: surface.height / 2 };
-  layoutHud();
 
   // the agents' markers (only when the drawing cursor is shown)
   const nibs = [];
@@ -285,7 +301,7 @@ export function runVR(variant) {
     A.phase = 'intro';
     intro.group.clear(); intro.dots = []; intro.popped = 0; intro.group.visible = true;
     intro.group.rotation.y = -A.yaw * D2R;   // in front of the current heading
-    const dist = 2.2, rad = Math.tan(1.6 * D2R) * dist;   // 3.2° dots: head aiming wants larger targets than 64 px on a screen
+    const dist = 2.2, rad = Math.tan(1.6 * D2R) * dist * viewScale(cfg.menuScale);   // 3.2° dots (× the menu size, 18.1): head aiming wants larger targets than 64 px on a screen
     [-22, 0, 22].forEach((yaw, i) => {
       const m = new THREE.Mesh(new THREE.CircleGeometry(rad, 40), new THREE.MeshBasicMaterial({ color: 0xbdbab4, transparent: true, depthTest: false }));
       m.position.copy(dirOf(yaw, 0).multiplyScalar(dist)); m.lookAt(0, 0, 0); m.renderOrder = 8;
@@ -307,7 +323,7 @@ export function runVR(variant) {
   function tickIntro(now, dt, aimYaw, aimEl) {
     const D = intro.dwell; let hit = null;
     const localYaw = wrapDeg(aimYaw - (-intro.group.rotation.y * R2D));
-    for (const d of intro.dots) if (!d.popped && Math.hypot(wrapDeg(localYaw - d.yaw), aimEl) <= 3.0 * Math.sqrt(1 + cfg.hitPad) / Math.sqrt(1.5)) hit = d.id;
+    for (const d of intro.dots) if (!d.popped && Math.hypot(wrapDeg(localYaw - d.yaw), aimEl) <= 3.0 * viewScale(cfg.menuScale) * Math.sqrt(1 + cfg.hitPad) / Math.sqrt(1.5)) hit = d.id;
     const fired = idDwell(D, hit, dt, now, cfg.menuDwellMs);
     for (const d of intro.dots) {
       if (d.popped) {
@@ -340,6 +356,7 @@ export function runVR(variant) {
   // ---------------------------------------------------------------------------------------------- welcome panel (3D)
   const splash = { panel: makePanel(1400, 1000, 58, 2.0), targets: [], dwell: { id: null, t: 0, lastIn: 0, needLeave: null }, hover: null };
   splash.panel.mesh.visible = false; scene.add(splash.panel.mesh);
+  applyView();   // 18.1 (after the panels exist): the engine's two scales, the menu, the welcome panel
   function showSplash3D() {
     A.phase = 'splash'; engine.setDrawMode(false); engine.S.submenu = null; engine.closeModal();
     const m = splash.panel.mesh; m.visible = true;
@@ -529,6 +546,7 @@ export function runVR(variant) {
   let vw = 0, vh = 0;
   function resize() {
     vw = window.innerWidth; vh = window.innerHeight;
+    menuScaleDom(cfg.menuScale);   // 18.1: the DOM pages, as far as the window holds them
     renderer.setSize(vw, vh, false);
     renderer.domElement.style.width = vw + 'px'; renderer.domElement.style.height = vh + 'px';
     const pr = renderer.getPixelRatio();
@@ -628,6 +646,9 @@ export function runVR(variant) {
       case 'k': case 'z': engine.undo(); break; case 'ç': case 'y': engine.redo(); break;
       case 'q': controllerDraw(); break; case 'g': engine.step('grid', +1); break;
       case ' ': case 'enter': select(); break;
+      case '+': case '=': nudgeView(+1); break;   // 18.1: the view size
+      case '-': nudgeView(-1); break;
+      case '0': nudgeView(0); break;
       case 'e': { const now = performance.now(); if (now - A.lastClearTap < 550) { engine.clear(); A.lastClearTap = -1e9; toast(t('toast.cleared')); } else { A.lastClearTap = now; engine.flash(); } break; }
       default: return;
     }
@@ -649,14 +670,18 @@ export function runVR(variant) {
     A.page = (which === 'about' ? showAbout : showHelp)({ root, gaze, onBack: () => { A.page = null; } });
   }
   function onCfgChange(k, v) {
+    const linked = linkedScale(cfg, k, v);   // 18.1: the two view sizes move together
     if (v !== undefined && k !== 'boids' && k !== 'preset') setPath(cfg, k, v);
+    if (linked) setPath(cfg, linked[0], linked[1]);
     if (k === 'lineMode') engine.setLineMode(v);
     else if (k === 'thickness') engine.setThickness(v);
     else if (k === 'color') engine.setColor(v);
     else if (k.startsWith('lineParams')) engine.applyLineMode();
     else if (k === 'hitPad' || k === 'hudPitchDeg') layoutHud();
     else if (k.startsWith('grid')) gridDirty = true;
+    else if (k === 'canvasScale' || k === 'menuScale') applyView();
     if (k === 'boids' || k === 'preset') agentsToCfg();
+    if (linked && A.cfgUI) A.cfgUI.sync();   // the other slider moves too
     persist();
   }
   function openConfigUI(scrollTop = 0) {
@@ -667,7 +692,7 @@ export function runVR(variant) {
       agents: () => agentsEditor({ engine, cfg, onChange: onCfgChange }), tracker: null,
       onReset: () => {
         const next = defaultsFor(variant); for (const kk of Object.keys(cfg)) delete cfg[kk]; Object.assign(cfg, next);
-        engine.applyLineMode(); engine.spawnBoids(); agentsToCfg(); layoutHud(); gridDirty = true; persist(); toast(t('toast.defaults'));
+        engine.applyLineMode(); engine.spawnBoids(); agentsToCfg(); applyView(); persist(); toast(t('toast.defaults'));
         A.cfgUI.close(); openConfigUI();
       },
       onClearSaved: () => { storage.del(settingsKey(variant)); toast(t('toast.storageCleared', { key: variant.key }), 4200); },
@@ -698,10 +723,11 @@ export function runVR(variant) {
     await applySession(s, {
       variant, cfg, engine, getSurface: () => surface, inkgaze: null,
       applyCfg: (next, boids) => {
-        const merged = deepMerge(defaultsFor(variant), next); for (const kk of Object.keys(cfg)) delete cfg[kk]; Object.assign(cfg, merged);
+        const keep = { canvasScale: cfg.canvasScale, menuScale: cfg.menuScale, scaleLink: cfg.scaleLink };   // 18.1: the view size is this person's
+        const merged = deepMerge(defaultsFor(variant), Object.assign({}, next, keep)); for (const kk of Object.keys(cfg)) delete cfg[kk]; Object.assign(cfg, merged);
         engine.applyLineMode();
         if (boids && boids.length) { cfg.boidCount = boids.length; engine.spawnBoids(boids); } else engine.spawnBoids();
-        agentsToCfg(); layoutHud(); gridDirty = true; persist();
+        agentsToCfg(); applyView(); persist();
       },
     });
     toast(t('toast.restored', { date: new Date(s.savedAt).toLocaleString(lang()) }), 5600);
@@ -755,7 +781,7 @@ export function runVR(variant) {
 
   // tests / debugging
   window.inkwell = {
-    version: VERSION, variant, cfg, A, engine, surface, renderer, scene, camera, hud, L: () => L,
+    version: VERSION, variant, cfg, A, engine, surface, renderer, scene, camera, hud, splash, intro, L: () => L,
     look(yaw, pitch) { A.mode = A.mode === 'sensors' ? 'sensors' : 'drag'; A.dragYaw = wrapDeg(yaw); A.dragPitch = clamp(pitch, -85, 85); },
     step(n = 1, dt = 1000 / 60) { for (let i = 0; i < n; i++) { tick(A.lastFrame + dt); } render(); },
     start,

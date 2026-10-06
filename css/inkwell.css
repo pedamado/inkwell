@@ -195,8 +195,8 @@ body.studio.v-b #stage { cursor: none; }
 .agent-row input { width: 100%; accent-color: var(--red); }
 .agent-row output { font-family: var(--mono); font-size: 12.5px; color: var(--ink-label); text-align: right; }
 
-/* 18d: the camera preview (top left, above the screens) and the reach calibration */
-#handcam { position: fixed; left: max(14px, env(safe-area-inset-left)); top: max(14px, env(safe-area-inset-top)); z-index: 35; width: 200px; height: auto; border-radius: 14px; box-shadow: var(--shadow-panel); background: var(--bg-band); pointer-events: none; }
+/* 18d: the camera preview (top left: above the first screens, below Configuration and the pages) and the reach calibration */
+#handcam { position: fixed; left: max(14px, env(safe-area-inset-left)); top: max(14px, env(safe-area-inset-top)); z-index: 15; width: 200px; height: auto; border-radius: 14px; box-shadow: var(--shadow-panel); background: var(--bg-band); pointer-events: none; }
 .reach { gap: 14px; padding: 20px 16px; }
 .reach h2 { margin: 0; font-family: var(--mono); font-size: 24px; letter-spacing: -0.01em; }
 .reach-hint { margin: 0; max-width: 42em; text-align: center; color: var(--ink-label); }
@@ -209,6 +209,7 @@ body.studio.v-b #stage { cursor: none; }
 .targets-label { font-family: var(--mono); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-label); margin-right: 4px; }
 .chip.target { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
 .chip .dot, .person .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: 0 0 0 1px rgba(25, 24, 23, 0.15); }
+.chip.on .dot { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9); }
 .cfg-head.remote { background: var(--red-soft); }
 .people { display: grid; gap: 8px; margin: 10px 0; }
 .person { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 14px; }
@@ -216,6 +217,11 @@ body.studio.v-b #stage { cursor: none; }
 .ctl.text input { width: 100%; margin-top: 6px; min-height: 44px; padding: 6px 12px; border-radius: 12px; border: 1px solid var(--divider); background: var(--bg-panel); font-family: var(--mono); }
 .cam-choice { display: inline-flex; align-items: center; gap: 10px; margin-top: 18px; font-family: var(--mono); font-size: 14px; color: var(--ink-label); }
 .cam-choice select, .tracker-panel select { min-height: 44px; padding: 6px 10px; border-radius: 12px; border: 1px solid var(--divider); background: var(--bg-panel); max-width: 100%; }
+
+/* 18.1: the menu size (Configuration → View size) — the screens (start, intro dots, welcome, About / Help) and the toasts
+   grow or shrink with the menu; the Configuration keeps its size (so the setting can always be undone). Set only ≠ ×1. */
+body.menu-scaled #screens > .screen:not(.reach) { zoom: var(--menu-scale); }
+body.menu-scaled #toast { font-size: calc(14px * var(--menu-scale)); padding: calc(12px * var(--menu-scale)) calc(20px * var(--menu-scale)); border-radius: calc(16px * var(--menu-scale)); max-width: min(92vw, calc(640px * var(--menu-scale))); }
 
 /* toast (top: the menu lives at the bottom) */
 #toast { position: fixed; top: max(18px, env(safe-area-inset-top)); left: 50%; z-index: 40; transform: translate(-50%, -140%); max-width: min(92vw, 640px); padding: 12px 20px; border-radius: 16px; background: var(--ink); color: #fff; font-family: var(--mono); font-size: 14px; line-height: 1.45; box-shadow: var(--shadow-panel); transition: transform 0.28s ease, opacity 0.28s ease, visibility 0s linear 0.28s; pointer-events: none; text-align: center; opacity: 0; visibility: hidden; }

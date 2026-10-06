@@ -5,7 +5,7 @@
 // Full credits: README.md.
 // ═══════════════════════════════════════════════════════════════════════════
 
-export const VERSION = '18.0.0';
+export const VERSION = '18.1.0';
 export const BUILD = 'inkwell-18';
 export const BUILD_NO = '18';
 export const STORE = 'inkwell18';      // localStorage prefix: build 18 keeps its own settings (16 and 17 are untouched)
@@ -103,6 +103,12 @@ export const DEFAULTS = {
   cursorDrawing: false,   // the cursor while a line is drawn: hidden (HTC Vive app: a visible cursor makes the eyes drift after it)
   cursorPaused: true,     // the cursor while paused / after an escape or a dwell stop: a dashed light-grey circle
 
+  // view size (18.1): the design assumes the 1 × 1 m canvas at 1 m (≈ 53°, menu coplanar). People sit nearer or farther,
+  // or shift in the room — these scale what is seen, as if nearer (> 1) or farther (< 1); 1 = as designed
+  canvasScale: 1.0,       // the canvas and everything on it (ink, grid, agents); the eyes' own tolerances stay in degrees
+  menuScale: 1.0,         // the menu and the screens: buttons, labels, icons and their hit areas (an accessibility zoom)
+  scaleLink: true,        // linked: moving one size moves the other by the same factor
+
   // line
   lineMode: 'dynamic',
   lineParams: { rigid: [0.4, 0.05], dynamic: [1.2, 0.5], fluid: [5.0, 1.0] },   // 1€ [minCutoff Hz, beta] per line option
@@ -167,6 +173,16 @@ export const VARIANT_DEFAULTS = {
   // are smoothed into the 60-Hz cursor; the direct pen until the thumb opens; no escape saccade (no eyes)
   d: { dwellStart: true, dwellStop: true, cursorDrawing: true, cursorSmooth: 0.6, dwellRadiusDeg: 1.2, boidCount: 0, preset: 'direct', escapeStop: false },
 };
+
+// ── the view size (18.1): both sizes run ×0.5 … ×2 (as at 2 m … 0.5 m; the requirements' comfortable band is 0.5–1.5 m) ──
+export const VIEW_SCALE = { min: 0.5, max: 2, refM: 1 };
+export const viewScale = (v) => clamp(+v || 1, VIEW_SCALE.min, VIEW_SCALE.max);
+// linked sizes: the other one moves by the same factor (each within its range) → [key, value] to set as well, or null
+export function linkedScale(cfg, k, v) {
+  if (!cfg.scaleLink || (k !== 'canvasScale' && k !== 'menuScale') || typeof v !== 'number') return null;
+  const o = k === 'canvasScale' ? 'menuScale' : 'canvasScale', f = v / viewScale(cfg[k]);
+  return [o, Math.round(viewScale(viewScale(cfg[o]) * f) * 100) / 100];
+}
 
 // ── storage (per variant) ──
 export const storage = {

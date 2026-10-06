@@ -16,16 +16,20 @@
 //            others as marks (and as a whole layer after undo / redo / clear / open); cursors and settings are shared;
 //            the oldest window sets the drawing's proportions (the others fit it, letterboxed); Configuration can show
 //            and change a partner's settings (a carer tuning the eye-tracking person's setup, live).
+//   View     (18.1) the canvas size: the paper (its layers, the grid, the agents) shown × Z about the window's centre,
+//            as if nearer / farther; the menu size: HUD.layout × menuScale, and the DOM screens (CSS zoom). Z = 1 and
+//            menuScale = 1 leave every transform and layout exactly as in 18.0.
 // ═══════════════════════════════════════════════════════════════════════════
 import {
   VERSION, BUILD_NO, VARIANTS, TK, COLORS, SEAT, seatSuffix, loadSettings, saveSettings, defaultsFor, settingsKey, storage, deepMerge, setPath, clamp, withAlpha, unlockAudio,
+  viewScale, linkedScale,
 } from './core.js';
 import { Share, shareSupported } from './share.js';
 import { paintMarks } from './marks.js';
 import { Surface } from './surface.js';
 import { Engine } from './engine.js';
 import * as HUD from './hud.js';
-import { GazeDom, toast, showGate, showIntro, showSplash, showAbout, showHelp, openConfig, agentsEditor, variantTitle, showReach } from './ui.js';
+import { GazeDom, toast, showGate, showIntro, showSplash, showAbout, showHelp, openConfig, agentsEditor, variantTitle, showReach, menuScaleDom } from './ui.js';
 import { t, has, onLanguage, setLanguage, langMeta } from './i18n.js';
 import { saveSession, recentSessions, pickSessionFile, parseSession, applySession } from './sessions.js';
 
@@ -39,6 +43,7 @@ export function runApp2D(variant) {
   const octx = overlay.getContext('2d');
   const gaze = new GazeDom(cfg);
   let W = 0, H = 0, DPR = 1, L = null, surface = null, engine = null, ig = null, gate = null;
+  let Z = viewScale(cfg.canvasScale);   // 18.1: the canvas size (screen px per surface px)
   const A = {
     phase: 'boot',          // boot · gate · intro · splash · studio
     paused: true,           // the tracker is not delivering gaze (its dialog / calibration is open, or not started)
@@ -61,6 +66,7 @@ export function runApp2D(variant) {
     overlay.width = Math.round(W * DPR); overlay.height = Math.round(H * DPR);
     overlay.style.width = W + 'px'; overlay.style.height = H + 'px';
     L = HUD.layout(W, H, cfg);
+    menuScaleDom(cfg.menuScale);   // 18.1: the screens (nothing is set at ×1); what this window holds
   }
   // the drawing's size: the window — or, shared (18), the room's proportions fitted in the window (letterboxed)
   function worldSize() {
@@ -82,21 +88,43 @@ export function runApp2D(variant) {
     paperHost.replaceChildren(SH.world, cv);
     for (const ly of SH.layers.values()) { sizeLayer(ly); paperHost.append(ly.cv); }
     stackLayers();
-    A.pan = { x: (s.width - W) / 2, y: (s.height - H) / 2 }; A.panKey = '';
-    document.body.classList.toggle('letterbox', s.width < W - 1 || s.height < H - 1);
+    A.pan = { x: (s.width - W / Z) / 2, y: (s.height - H / Z) / 2 }; A.panKey = '';
+    letterbox();
     if (engine) engine.surface = s;
     if (share && share.active && SH.layers.size) for (const id of SH.layers.keys()) share.need(id);   // their ink again, at the new size
   }
-  function placePaper() {
-    const key = Math.round(A.pan.x) + ',' + Math.round(A.pan.y);
+  function placePaper() {   // A.pan: the surface point at the window's top left; the paper is shown × Z (18.1)
+    const px = Math.round(A.pan.x * Z), py = Math.round(A.pan.y * Z), key = px + ',' + py + ',' + Z;
     if (key === A.panKey) return;
     A.panKey = key;
-    const tr = `translate(${-Math.round(A.pan.x)}px, ${-Math.round(A.pan.y)}px)`;
+    const tr = `translate(${-px}px, ${-py}px)` + (Z !== 1 ? ` scale(${Z})` : '');
     for (const el of paperHost.children) el.style.transform = tr;
   }
-  function panBy(dx, dy) {   // a drawing smaller than the window (letterboxed) stays centred
-    A.pan.x = surface.width <= W ? (surface.width - W) / 2 : clamp(A.pan.x + dx, 0, surface.width - W);
-    A.pan.y = surface.height <= H ? (surface.height - H) / 2 : clamp(A.pan.y + dy, 0, surface.height - H);
+  function panBy(dx, dy) {   // screen px; a drawing smaller than the view (letterboxed, or the canvas scaled down) stays centred
+    const vw = W / Z, vh = H / Z;
+    A.pan.x = surface.width <= vw ? (surface.width - vw) / 2 : clamp(A.pan.x + dx / Z, 0, surface.width - vw);
+    A.pan.y = surface.height <= vh ? (surface.height - vh) / 2 : clamp(A.pan.y + dy / Z, 0, surface.height - vh);
+  }
+  function letterbox() { document.body.classList.toggle('letterbox', surface.width * Z < W - 1 || surface.height * Z < H - 1); }
+  // 18.1: the view size changed (Configuration → View size, the + / − / 0 keys, a partner's window, a reset): the canvas
+  // zooms about the window's centre (the point there stays there), the menu is laid out again, the screens follow
+  function applyView() {
+    const z = viewScale(cfg.canvasScale);
+    if (z !== Z && surface) {
+      const cx = A.pan.x + W / 2 / Z, cy = A.pan.y + H / 2 / Z;
+      Z = z; A.pan.x = cx - W / 2 / Z; A.pan.y = cy - H / 2 / Z; panBy(0, 0);
+    } else Z = z;
+    A.panKey = '';
+    if (surface) letterbox();
+    if (engine) engine.eyePpd = cfg.ppd / Z;   // the eyes' tolerances stay in degrees of the view
+    L = HUD.layout(W, H, cfg);
+    menuScaleDom(cfg.menuScale);
+  }
+  // + / − (both sizes when linked) · 0 (both back to ×1): quick tests by a carer or a developer
+  function nudgeView(dir) {
+    if (dir === 0) { onCfgChange('canvasScale', 1); if (cfg.menuScale !== 1) onCfgChange('menuScale', 1); }
+    else onCfgChange('canvasScale', Math.round(viewScale(cfg.canvasScale + dir * 0.05) * 100) / 100);
+    toast(t('toast.view', { canvas: viewScale(cfg.canvasScale).toFixed(2), menu: viewScale(cfg.menuScale).toFixed(2) }), 2200);
   }
   // the partners' layers: one canvas each, the size of this window's surface, stacked oldest first (as everywhere)
   function layerFor(p) {
@@ -119,14 +147,16 @@ export function runApp2D(variant) {
     for (const [id, ly] of SH.layers) ly.cv.style.zIndex = z(id);
     A.panKey = '';
   }
-  const recentrePan = () => { A.pan = { x: (surface.width - W) / 2, y: (surface.height - H) / 2 }; };
+  const recentrePan = () => { A.pan = { x: (surface.width - W / Z) / 2, y: (surface.height - H / Z) / 2 }; };
 
   // ---------------------------------------------------------------------------------------------- settings
   let saveT = 0;
   function persist() { clearTimeout(saveT); saveT = setTimeout(() => saveSettings(variant, cfg), 250); publishCfg(); }
   function agentsToCfg() { cfg.agents = engine.S.boids.map((b) => b.props()); cfg.boidCount = cfg.agents.length; }
-  function onCfgChange(k, v) {
+  function onCfgChange(k, v, remote = false) {
+    const linked = remote ? null : linkedScale(cfg, k, v);   // 18.1: the two view sizes move together (a partner sends both)
     if (v !== undefined && k !== 'boids' && k !== 'preset') setPath(cfg, k, v);
+    if (linked) setPath(cfg, linked[0], linked[1]);
     if (k === 'lineMode') engine.setLineMode(v);
     else if (k === 'thickness') engine.setThickness(v);
     else if (k === 'color') engine.setColor(v);
@@ -135,22 +165,23 @@ export function runApp2D(variant) {
     else if (k === 'escapeAmplitude') { if (ig) ig.setOptions({ escapeAmplitude: v }); }
     else if (k === 'panEnabled' || k === 'worldScale') buildSurface(surface);
     else if (k === 'hitPad') L = HUD.layout(W, H, cfg);
-    else if (k === 'ppd') engine.ppd = v;
+    else if (k === 'ppd') { engine.ppd = v; engine.eyePpd = v / Z; }
+    else if (k === 'canvasScale' || k === 'menuScale') applyView();
     else if (k === 'shareOn') { if (v) startShare(); else stopShare(); }
     else if (k === 'shareRoom') { if (share) { stopShare(); startShare(); } }
     else if (k === 'shareName') { if (share) share.announce(); }
     else if (k === 'handCameraId') { if (hands && hands.running) hands.restart(); }
     if (k === 'color' && share) share.announce();
     if (k === 'boids' || k === 'preset') agentsToCfg();
+    if (linked && A.cfgUI && !A.cfgTarget) A.cfgUI.sync();   // the other slider moves too
     persist();
   }
   function replaceCfg(next) { for (const k of Object.keys(cfg)) delete cfg[k]; Object.assign(cfg, next); }
   function afterCfgSwap(boids) {
-    engine.applyLineMode(); engine.ppd = cfg.ppd;
+    engine.applyLineMode(); engine.ppd = cfg.ppd; applyView();
     if (boids && boids.length) { cfg.boidCount = boids.length; engine.spawnBoids(boids); } else engine.spawnBoids(Array.isArray(cfg.agents) && cfg.agents.length === cfg.boidCount ? cfg.agents : null);
     agentsToCfg();
     if (isD) HS.thumb = engine.S.boids.length > 0;   // an opened drawing's agents stay until the thumb says otherwise
-    L = HUD.layout(W, H, cfg);
     if (ig) ig.setOptions({ escapeAmplitude: cfg.escapeAmplitude });
     persist();
   }
@@ -250,7 +281,7 @@ export function runApp2D(variant) {
   const REMOTE_BLOCK = new Set(['shareOn', 'shareRoom', 'agents', 'handBox']);
   function onRemoteSet(k, v, p) {
     if (REMOTE_BLOCK.has(k) || typeof k !== 'string') return;
-    onCfgChange(k, v);
+    onCfgChange(k, v, true);
     if (A.cfgUI && !A.cfgTarget) A.cfgUI.sync();
     remoteNotice(p);
   }
@@ -422,7 +453,7 @@ export function runApp2D(variant) {
   function drawHandCam(h) {
     if (A.reach) { hands.drawPreview(A.reach.scr.canvas, { sweep: hands.reachSweep(), label: poseLabel(h) }); A.reach.scr.progress(hands.reachProgress); }
     if (!camEl) return;
-    const show = (cfg.handPreview !== false || A.phase === 'gate') && !A.reach && !A.orbit && HS.status !== 'idle';
+    const show = (cfg.handPreview !== false || A.phase === 'gate') && !A.reach && !A.orbit && !A.page && HS.status !== 'idle';   // (a page's Back button sits there)
     if (camEl.hidden === show) camEl.hidden = !show;
     if (!show) return;
     const v = hands.video;
@@ -502,6 +533,7 @@ export function runApp2D(variant) {
         onLayer: () => sendLayer(),                                                     // 18: undo / redo / clear
       },
     });
+    engine.eyePpd = cfg.ppd / Z;   // 18.1
     if (isD) cfg.boidCount = 0;   // 18d: the direct pen; the thumb calls the agents
     engine.spawnBoids(!isD && Array.isArray(cfg.agents) && cfg.agents.length === cfg.boidCount ? cfg.agents : null);
     agentsToCfg();
@@ -632,6 +664,7 @@ export function runApp2D(variant) {
     A.cfgUI = openConfig({
       variant, cfg, gaze, scrollTop, participants: participants(), onTarget,
       onChange: onCfgChange,
+      notes: { menuScale: (v) => (L && v > L.menuMax + 0.004 ? t('cfg.view.capped', { k: L.menuMax.toFixed(2) }) : '') },
       onLanguage: pickLanguage,
       agents: () => agentsEditor({ engine, cfg, onChange: onCfgChange }),
       tracker: isA ? trackerPanel : null,
@@ -649,7 +682,12 @@ export function runApp2D(variant) {
   }
   function openRemoteConfig(peer, scrollTop, onClose) {
     const pv = VARIANTS[peer.info.variant] || variant, pcfg = peer.cfg || deepMerge(defaultsFor(pv), {}), ex = peer.extra || {};
-    const send = (k, v) => { if (k === 'boids' || k === 'preset') return; setPath(pcfg, k, v); share.set(peer.id, k, v); };
+    const send = (k, v) => {
+      if (k === 'boids' || k === 'preset') return;
+      const linked = linkedScale(pcfg, k, v);   // 18.1: linked view sizes — both are sent
+      setPath(pcfg, k, v); share.set(peer.id, k, v);
+      if (linked) { setPath(pcfg, linked[0], linked[1]); share.set(peer.id, linked[0], linked[1]); if (A.cfgUI) A.cfgUI.sync(); }
+    };
     const cmd = (c, a) => { SH.cmdT = performance.now(); share.cmd(peer.id, c, a); };
     const proxy = {   // the agents editor drives this stand-in for the partner's engine
       S: { boids: Array.isArray(pcfg.agents) ? pcfg.agents : [] },
@@ -776,7 +814,8 @@ export function runApp2D(variant) {
     if (!s || s.error) { toast(s && s.error ? t(s.error) : t('toast.nothingOpened'), 4200); return; }
     engine.penUp('open'); engine.endGridLine();
     const before = cfg.panEnabled + ':' + cfg.worldScale;
-    const keep = { shareOn: cfg.shareOn, shareRoom: cfg.shareRoom, shareName: cfg.shareName, handCameraId: cfg.handCameraId, handBox: cfg.handBox };
+    const keep = { shareOn: cfg.shareOn, shareRoom: cfg.shareRoom, shareName: cfg.shareName, handCameraId: cfg.handCameraId, handBox: cfg.handBox,
+      canvasScale: cfg.canvasScale, menuScale: cfg.menuScale, scaleLink: cfg.scaleLink };   // 18.1: the view size is this person's
     const r = await applySession(s, {
       variant, cfg, engine, getSurface: () => surface, inkgaze: isA ? ig : null, prepare: keyOutPaper,
       applyCfg: (next, boids) => {
@@ -810,13 +849,13 @@ export function runApp2D(variant) {
     if (g && !hudId) {
       ghost(g, dt);
       const hold = A.holdT && now - A.holdT < 100;   // 18a: a saccade in flight: hold the pen until the escape check
-      if (!hold || !A.held) A.held = { x: clamp(A.ghost.x + A.pan.x, 0, surface.width), y: clamp(A.ghost.y + A.pan.y, 0, surface.height) };
+      if (!hold || !A.held) A.held = { x: clamp(A.ghost.x / Z + A.pan.x, 0, surface.width), y: clamp(A.ghost.y / Z + A.pan.y, 0, surface.height) };
       surf = A.held;
     }
     engine.update({ now, dt, hudId, overHud: !!hudId, surf, gazeDegS: A.degS, blinkMs: A.blinkMs, lost: !ok });
     if (share && share.active) {   // 18: where I am, for the others (world units: surface px / surface width)
       if (!g) share.cursor(0, 0, 'off');
-      else share.cursor(clamp(g.x + A.pan.x, 0, surface.width) / surface.width, clamp(g.y + A.pan.y, 0, surface.height) / surface.width,
+      else share.cursor(clamp(g.x / Z + A.pan.x, 0, surface.width) / surface.width, clamp(g.y / Z + A.pan.y, 0, surface.height) / surface.width,
         hudId ? 'menu' : HUD.cursorState(engine) === 'drawing' ? 'draw' : engine.S.drawMode ? 'armed' : 'rest');
     }
   }
@@ -888,13 +927,13 @@ export function runApp2D(variant) {
     const now = performance.now();
     for (const p of share.peers.values()) {
       const q = p.cursor; if (!q || q.st === 'off' || now - q.t > 1200) continue;
-      const x = q.x * surface.width - A.pan.x, y = q.y * surface.width - A.pan.y, col = peerColour(p.info);
+      const x = (q.x * surface.width - A.pan.x) * Z, y = (q.y * surface.width - A.pan.y) * Z, col = peerColour(p.info);
       c.save(); c.globalAlpha = q.st === 'menu' ? 0.4 : 0.95;
       c.lineWidth = 3; c.strokeStyle = col; if (q.st === 'rest') c.setLineDash([5, 5]);
       c.beginPath(); c.arc(x, y, 17, 0, Math.PI * 2); c.stroke(); c.setLineDash([]);
       if (q.st === 'draw' || q.st === 'armed') { c.beginPath(); c.arc(x, y, q.st === 'draw' ? 5 : 2.5, 0, Math.PI * 2); c.fillStyle = col; c.fill(); }
       const name = p.info.name || t('variant.' + p.info.variant);
-      c.font = "700 12px 'JetBrains Mono', ui-monospace, monospace"; c.textBaseline = 'middle';
+      c.font = "700 12px 'JetBrains Mono', ui-monospace, monospace"; c.textBaseline = 'middle'; c.textAlign = 'left';
       const w = c.measureText(name).width + 16, lx = clamp(x + 20, 4, W - w - 4), ly = clamp(y + 16, 4, H - 26);
       c.fillStyle = col; c.beginPath(); if (c.roundRect) c.roundRect(lx, ly, w, 22, 11); else c.rect(lx, ly, w, 22); c.fill();
       c.fillStyle = '#fff'; c.fillText(name, lx + 8, ly + 11.5);
@@ -928,25 +967,25 @@ export function runApp2D(variant) {
     const flashes = engine.gridFlashes(now);
     if (vis !== 'hidden') {
       const x0 = Math.floor(A.pan.x / sp) * sp, y0 = Math.floor(A.pan.y / sp) * sp;
-      for (let wx = x0; wx <= A.pan.x + W + sp; wx += sp) for (let wy = y0; wy <= A.pan.y + H + sp; wy += sp) {
+      for (let wx = x0; wx <= A.pan.x + W / Z + sp; wx += sp) for (let wy = y0; wy <= A.pan.y + H / Z + sp; wy += sp) {
         let alpha = 0.16;
         if (vis === 'feedback') { const f = flashes.get(wx + ',' + wy); if (!f) continue; alpha = flashAlpha(f, now) * 0.65; if (alpha <= 0.01) continue; }
-        c.beginPath(); c.arc(wx - A.pan.x, wy - A.pan.y, rr, 0, Math.PI * 2); c.fillStyle = withAlpha(TK.ink, alpha); c.fill();
+        c.beginPath(); c.arc((wx - A.pan.x) * Z, (wy - A.pan.y) * Z, rr * Z, 0, Math.PI * 2); c.fillStyle = withAlpha(TK.ink, alpha); c.fill();
       }
     }
     if (!S.drawMode) return;
     const col = engine.color === '#ffffff' ? TK.muted : engine.color;
-    if (G.active) for (const n of G.nodes) { c.beginPath(); c.arc(n.x - A.pan.x, n.y - A.pan.y, 4, 0, Math.PI * 2); c.fillStyle = withAlpha(col, 0.55); c.fill(); }
+    if (G.active) for (const n of G.nodes) { c.beginPath(); c.arc((n.x - A.pan.x) * Z, (n.y - A.pan.y) * Z, 4, 0, Math.PI * 2); c.fillStyle = withAlpha(col, 0.55); c.fill(); }
     const d = G.dot;
     if (!d) return;
-    const sx = d.x - A.pan.x, sy = d.y - A.pan.y;
-    if (vis !== 'hidden') { c.beginPath(); c.arc(sx, sy, rr + 3, 0, Math.PI * 2); c.strokeStyle = withAlpha(col, 0.9); c.lineWidth = 2; c.stroke(); }
+    const sx = (d.x - A.pan.x) * Z, sy = (d.y - A.pan.y) * Z;
+    if (vis !== 'hidden') { c.beginPath(); c.arc(sx, sy, rr * Z + 3, 0, Math.PI * 2); c.strokeStyle = withAlpha(col, 0.9); c.lineWidth = 2; c.stroke(); }
     if (G.active && G.last && !S.boids.length) {
       c.save(); c.setLineDash([4, 5]); c.strokeStyle = withAlpha(col, 0.35); c.lineWidth = 2;
-      c.beginPath(); c.moveTo(G.last.x - A.pan.x, G.last.y - A.pan.y); c.lineTo(sx, sy); c.stroke(); c.restore();
+      c.beginPath(); c.moveTo((G.last.x - A.pan.x) * Z, (G.last.y - A.pan.y) * Z); c.lineTo(sx, sy); c.stroke(); c.restore();
     }
     const pr = S.cdwell.key === d.key ? clamp(S.cdwell.t / cfg.canvasDwellMs, 0, 1) : 0;
-    if (pr > 0) HUD.arc(c, sx, sy, rr + 8, pr, TK.red, 3);
+    if (pr > 0) HUD.arc(c, sx, sy, rr * Z + 8, pr, TK.red, 3);
   }
   function drawAgents(c) {
     const S = engine.S, white = engine.color === '#ffffff', col = white ? '#ffffff' : engine.color;
@@ -959,10 +998,10 @@ export function runApp2D(variant) {
       c.beginPath(); c.arc(gh.x, gh.y, 21, 0, Math.PI * 2); c.strokeStyle = withAlpha(white ? TK.muted : col, 0.35); c.lineWidth = 1.5; c.stroke();
     }
     const nib = (x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fillStyle = withAlpha(col, 0.95); c.fill(); c.strokeStyle = white ? TK.muted : 'rgba(255,255,255,0.7)'; c.lineWidth = 1; c.stroke(); };
-    const r = engine.widthRange(), rn = clamp(r.nom * (1 + S.eng), 3, 40) / 2 + 2;
+    const r = engine.widthRange(), rn = clamp(r.nom * (1 + S.eng), 3, 40) * Z / 2 + 2;
     if (S.boids.length) {
       for (const b of S.boids) {
-        const x = b.x - A.pan.x, y = b.y - A.pan.y;
+        const x = (b.x - A.pan.x) * Z, y = (b.y - A.pan.y) * Z;
         if (!S.drawMode) continue;
         if (!inking) {
           c.save(); c.strokeStyle = 'rgba(158,150,138,0.22)'; c.lineWidth = 1; c.setLineDash([2, 4]);
@@ -970,7 +1009,7 @@ export function runApp2D(variant) {
           c.beginPath(); c.arc(x, y, 3.5, 0, Math.PI * 2); c.fillStyle = withAlpha(white ? TK.muted : col, 0.5); c.fill();
         } else nib(x, y, rn);
       }
-    } else if (inking && !engine.gridMode && S.pen) nib(S.pen.x - A.pan.x, S.pen.y - A.pan.y, rn);
+    } else if (inking && !engine.gridMode && S.pen) nib((S.pen.x - A.pan.x) * Z, (S.pen.y - A.pan.y) * Z, rn);
   }
 
   // ---------------------------------------------------------------------------------------------- 3D view (build 15)
@@ -1053,6 +1092,9 @@ export function runApp2D(variant) {
       case 'r': recentrePan(); toast(t('toast.recentred')); break;
       case 'c': if (isA && ig) ig.recenter(); else if (isD) openReach(); break;
       case 'h': if (!isD) return; cfg.handPreview = !cfg.handPreview; persist(); break;
+      case '+': case '=': nudgeView(+1); break;   // 18.1: the view size
+      case '-': nudgeView(-1); break;
+      case '0': nudgeView(0); break;
       default: return;
     }
     e.preventDefault();
@@ -1078,7 +1120,7 @@ export function runApp2D(variant) {
   });
   stage.addEventListener('pointerdown', (e) => { if (e.button === 2) A.drag = true; });
   window.addEventListener('pointerup', (e) => { if (e.button === 2) A.drag = false; });
-  window.addEventListener('pointermove', (e) => { if ((A.drag || A.space) && A.phase === 'studio' && cfg.panEnabled) panBy(-e.movementX, -e.movementY); }, { passive: true });
+  window.addEventListener('pointermove', (e) => { if ((A.drag || A.space) && A.phase === 'studio' && (cfg.panEnabled || Z > 1)) panBy(-e.movementX, -e.movementY); }, { passive: true });
   stage.addEventListener('contextmenu', (e) => { if (A.phase === 'studio') e.preventDefault(); });
   document.addEventListener('pointerdown', () => unlockAudio(), { passive: true });
 
@@ -1108,7 +1150,7 @@ export function runApp2D(variant) {
   startShare();   // 18: join the room (no network: the other windows of this browser)
   window.inkwell = {
     version: VERSION, variant, cfg, A, get engine() { return engine; }, get surface() { return surface; }, get inkgaze() { return ig; },
-    get hands() { return hands; }, HS, get share() { return share; }, SH, compose,
+    get hands() { return hands; }, HS, get share() { return share; }, SH, compose, get L() { return L; }, get Z() { return Z; },
     // 18d tests without a camera: the tracker as if running; then hands.inject({pose, n, thumb, x, y, …}, t)
     async handTest() { await ensureHands(); HS.status = 'tracking'; hands.state = 'tracking'; A.paused = false; return hands; },
     // tests: stop the live input, then inject gaze points (viewport px)

@@ -5,7 +5,7 @@
 // (18d: also a finger tap).
 // Every text comes from the language files (i18n/*.json) through t().
 // ═══════════════════════════════════════════════════════════════════════════
-import { VERSION, BUILD_NO, THICKNESS, THICKNESS_ORDER, LINE_ORDER, COLOR_ORDER, PRESETS, AGENT_RANGE, chime, unlockAudio, clamp, getPath } from './core.js';
+import { VERSION, BUILD_NO, THICKNESS, THICKNESS_ORDER, LINE_ORDER, COLOR_ORDER, PRESETS, AGENT_RANGE, VIEW_SCALE, viewScale, chime, unlockAudio, clamp, getPath } from './core.js';
 import { t, has, lang, langMeta, languages, setLanguage, addLanguageFile, removeLanguageFile, exportLanguage } from './i18n.js';
 
 // The Help page's tutorial: paste a YouTube video id here (e.g. 'dQw4w9WgXcQ') and it replaces the placeholder.
@@ -97,6 +97,19 @@ export class GazeDom {
   _paint(tg, k, on) { tg.el.style.setProperty('--dwell', k.toFixed(3)); tg.el.classList.toggle('gazed', !!on); }
 }
 
+// ═══ 18.1: the menu size also scales the DOM screens (start, intro dots, welcome, About / Help) and the toasts (CSS) ═══
+// The Configuration keeps its size, so the setting can always be undone. At ×1 nothing is set at all. Larger sizes stop
+// at what the window holds (the welcome screen fits ×1.5 in 1024 × 768: W / 680, H / 510) → the size shown
+export function menuScaleDom(m) {
+  let z = viewScale(m);
+  if (z > 1) z = Math.min(z, Math.max(1, Math.min(window.innerWidth / 680, window.innerHeight / 510)));
+  const on = Math.abs(z - 1) > 0.001, b = document.body;
+  b.classList.toggle('menu-scaled', on);
+  if (on) b.style.setProperty('--menu-scale', z.toFixed(3)); else b.style.removeProperty('--menu-scale');
+  return z;
+}
+const domScale = () => parseFloat(document.body.style.getPropertyValue('--menu-scale')) || 1;   // the screens' size now
+
 // ═══ toasts ═══════════════════════════════════════════════════════════════════
 let toastT = 0;
 export function toast(text, ms = 2600) {
@@ -136,7 +149,7 @@ export function showIntro({ root, gaze, cfg, ppd, hint, onDone }) {
       if (popped === 3) setTimeout(() => { sec.classList.add('leaving'); setTimeout(() => { gaze.removeWithin(sec); sec.remove(); onDone(); }, 380); }, 520);
     };
     d.addEventListener('click', () => { unlockAudio(); fire(); });
-    gaze.add(d, fire, { radius: Math.max(32 * Math.sqrt(1 + cfg.hitPad), 1.6 * ppd) });
+    gaze.add(d, fire, { radius: Math.max(32 * domScale() * Math.sqrt(1 + cfg.hitPad), 1.6 * ppd) });   // 18.1: × the screens' size
   });
   root.append(sec);
   return sec;
@@ -213,8 +226,16 @@ export function showHelp(o) {
 // ═══ Configuration ════════════════════════════════════════════════════════════
 // label = t('cfg.items.<key>.label'), help = t('cfg.items.<key>.help') when the language has one
 const pct = (v) => Math.round(v * 100) + ' %';
+// 18.1: a view size, and the distance it stands for (the design distance is 1 m: the 1 × 1 m canvas at 1 m, ≈ 53°)
+const fmtScale = (v) => '×' + (+v).toFixed(2) + ' · ' + t('cfg.view.asIf', { m: (VIEW_SCALE.refM / viewScale(v)).toFixed(2) });
 const SECTIONS = [
   { key: 'language', custom: 'language' },
+  // 18.1: the view size — the canvas and the menu, as if nearer or farther (linked, or each on its own)
+  { key: 'view', items: [
+    { k: 'canvasScale', t: 'range', min: VIEW_SCALE.min, max: VIEW_SCALE.max, step: 0.05, fmt: fmtScale },
+    { k: 'menuScale', t: 'range', min: VIEW_SCALE.min, max: VIEW_SCALE.max, step: 0.05, fmt: fmtScale },
+    { k: 'scaleLink', t: 'check' },
+  ] },
   // 18: the shared drawing (the 2D variants; the people in the room, their settings, clearing everyone's drawing)
   { key: 'share', variants: 'abd', custom: 'share', items: [
     { k: 'shareOn', t: 'check' },
@@ -347,7 +368,8 @@ function languagePanel({ onPick }) {
 // button and the scroll arrows are gaze targets; the controls are for the mouse / keyboard (a helper or the researcher).
 // 18: participants [{id, label, color, on}] add a "Settings of" switch (onTarget(id)); remote {name, key}: the panel shows
 // a partner's settings — its language, room and links stay with that person
-export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, hands, share, onReset, onClearSaved, onLanguage, links = [], onClose, scrollTop = 0, participants = [], onTarget = null, remote = null }) {
+// notes {key: (v) → text}: a remark after a value (18.1: how far the menu can grow in this window)
+export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, hands, share, onReset, onClearSaved, onLanguage, links = [], onClose, scrollTop = 0, participants = [], onTarget = null, remote = null, notes = null }) {
   const old = $('#config'); if (old) old.remove();
   const prevFocus = document.activeElement;
   let layer = null;
@@ -375,6 +397,7 @@ export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, hand
   layer = h('div', { id: 'config', class: 'cfg-layer' }, panel);
   layer.addEventListener('mousedown', (e) => { if (e.target === layer) close(); });
   const controls = [];
+  const note = (k, v) => { const f = notes && notes[k], n = f ? f(v) : ''; return n ? ' — ' + n : ''; };
   for (const sec of SECTIONS) {
     if (sec.variants && !sec.variants.includes(variant.id)) continue;
     if (sec.custom === 'tracker' && !tracker) continue;
@@ -403,7 +426,7 @@ export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, hand
       let input; const out = h('output', { for: id });
       if (it.t === 'range') {
         input = h('input', { type: 'range', id, min: it.min, max: it.max, step: it.step });
-        input.addEventListener('input', () => { out.textContent = fmtVal(it, +input.value); onChange(it.k, +input.value); });
+        input.addEventListener('input', () => { onChange(it.k, +input.value); out.textContent = fmtVal(it, +input.value) + note(it.k, +input.value); });
       } else if (it.t === 'check') {
         input = h('input', { type: 'checkbox', id });
         input.addEventListener('change', () => onChange(it.k, input.checked));
@@ -428,7 +451,7 @@ export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, hand
       if (it.t === 'check') input.checked = !!v;
       else if (it.t === 'text') { if (document.activeElement !== input) input.value = v == null ? '' : String(v); }
       else input.value = String(v);
-      if (it.t === 'range') out.textContent = fmtVal(it, +v);
+      if (it.t === 'range') out.textContent = fmtVal(it, +v) + note(it.k, +v);
     }
   }
   sync();

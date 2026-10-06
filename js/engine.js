@@ -13,6 +13,9 @@
 //               Clear asks in a modal (1.2 s, cancelled the moment the gaze leaves).
 // Coordinates: the runtime passes the gaze in HUD space (hud id from hud.hit) and on the SURFACE (surface px; the VR
 // ring is unwrapped here, so strokes cross the 360° seam smoothly).
+// Two scales (18.1): ppd = surface px per degree OF THE CANVAS (ink widths, drips, splats, the grid: they grow with a
+// nearer canvas) · eyePpd = surface px per degree OF THE VIEW (the dwell radius, the 1€ filter: the eyes' own tolerances,
+// the same whatever the canvas size). Equal unless the canvas is scaled (Configuration → View size).
 // ═══════════════════════════════════════════════════════════════════════════
 import {
   LINE_MODES, LINE_ORDER, THICKNESS, THICKNESS_ORDER, COLORS, COLOR_ORDER, GRID_ORDER, PRESETS, PRESET_KEYS,
@@ -24,7 +27,7 @@ const STEP_MS = 1000 / 60;
 
 export class Engine {
   constructor({ cfg, surface, ppd, wrapW = 0, hooks = {} }) {
-    this.cfg = cfg; this.surface = surface; this.ppd = ppd; this.wrapW = wrapW; this.hooks = hooks;
+    this.cfg = cfg; this.surface = surface; this.ppd = ppd; this.eyePpd = ppd; this.wrapW = wrapW; this.hooks = hooks;
     this.S = {
       now: 0, drawMode: false, penDown: false, submenu: null, modal: null,
       dwell: { id: null, t: 0, lastIn: 0 }, needLeave: null, flashUntil: 0, hoverId: null,
@@ -256,7 +259,7 @@ export class Engine {
   // the landing point of an escape follows the gaze for 400 ms (the jump settles), then the block lifts once the gaze is
   // 3 dwell radii away from it
   _rearm(degS) {
-    const S = this.S, R = this.degToPx(this.cfg.dwellRadiusDeg), p = S.target, A = S.rearm;
+    const S = this.S, R = this.cfg.dwellRadiusDeg * this.eyePpd, p = S.target, A = S.rearm;
     S.cdwell.t = 0; S.autoArmT = null;
     if (!A.at || S.now - A.t < 400 || (!A.fixed && degS >= this.cfg.settleDegS)) { A.at = { x: p.x, y: p.y }; return; }
     A.fixed = true;
@@ -265,7 +268,7 @@ export class Engine {
   // canvas: dwell (settled gaze inside a small radius) starts the line, or stops it (opt-in)
   _canvasDwell(dt, degS) {
     const S = this.S, cfg = this.cfg, C = S.cdwell, p = S.target, now = S.now;
-    const settled = degS < cfg.settleDegS, R = this.degToPx(cfg.dwellRadiusDeg);
+    const settled = degS < cfg.settleDegS, R = cfg.dwellRadiusDeg * this.eyePpd;
     if (!S.penDown && !cfg.dwellStart) {          // no dwell to start: the pen goes down on the first settled gaze
       if (S.autoArmT == null) S.autoArmT = now;
       if (!settled) S.autoArmT = now;
@@ -316,8 +319,8 @@ export class Engine {
     const S = this.S;
     if (!S.target) return;
     const dtS = Math.max(0.001, dt / 1000);
-    // line-option smoothing: 1€ filter in degrees
-    const fx = this.fx.filter(S.target.x / this.ppd, dtS) * this.ppd, fy = this.fy.filter(S.target.y / this.ppd, dtS) * this.ppd;
+    // line-option smoothing: 1€ filter in degrees (of the view: it smooths the eyes' signal)
+    const e = this.eyePpd, fx = this.fx.filter(S.target.x / e, dtS) * e, fy = this.fy.filter(S.target.y / e, dtS) * e;
     S.filtered = { x: fx, y: fy };
     let seek = { x: fx, y: fy };
     if (this.gridMode && S.grid.active && S.grid.last) seek = { x: S.grid.last.x, y: S.grid.last.y };

@@ -6,11 +6,14 @@
 //   Pull-up submenus, the Options submenu (Clear · Save · Open · Configuration), and canvas-drawn modals (Clear
 //   confirmation, Open drawing) so every action works by gaze dwell, on screen and in VR.
 // No cream band under the menu (v16): only the floating bar.
+// Menu size (18.1, cfg.menuScale): the whole menu — buttons, icons, labels, hit areas, submenus, dialogs — × menuScale;
+// on a screen it never grows wider than the window, nor taller than its tallest submenu allows (L.menuK: what is shown).
 // ═══════════════════════════════════════════════════════════════════════════
-import { TK, COLORS, COLOR_ORDER, LINE_ORDER, THICKNESS_ORDER, GRID_ORDER, clamp, withAlpha } from './core.js';
+import { TK, COLORS, COLOR_ORDER, LINE_ORDER, THICKNESS_ORDER, GRID_ORDER, clamp, withAlpha, viewScale } from './core.js';
 import { t } from './i18n.js';
 
 const G = { MOD: 112, BIG: 148, GAP: 28, PADX: 40, PADY: 18, LBL: 50, RAD: 34 };
+const SUB = { W: 176, WO: 214, H: 92, CAP: 42, GAP: 14 };   // submenus: width (Options wider), option height, ✕ cap, gap above the bar
 const ITEMS = ['line', 'thickness', 'color', 'draw', 'grid', 'undo', 'options'];
 const FONT = "'JetBrains Mono', ui-monospace, Menlo, monospace";
 
@@ -19,7 +22,15 @@ export const OPTIONS_KEYS = ['clear', 'save', 'open', 'config'];
 // ---------------------------------------------------------------------------------------------- layout
 export function layout(W, H, cfg, opts = {}) {
   const base = ITEMS.reduce((s, k, i) => s + (k === 'draw' ? G.BIG : G.MOD) + (i ? G.GAP : 0), 0) + 2 * G.PADX;
-  const scale = opts.scale || clamp((W - 24) / base, 0.45, 1.15), fs = opts.fontScale || 1;   // fontScale: VR (text ≈ 1° tall)
+  const fitW = (W - 24) / base;
+  let scale = opts.scale || clamp(fitW, 0.45, 1.15), menuK = 1, menuMax = Infinity;
+  const fs = opts.fontScale || 1;   // fontScale: VR (text ≈ 1° tall)
+  if (!opts.scale) {   // 18.1 (VR scales its menu panel instead)
+    const m = viewScale(cfg.menuScale), tall = SUB.CAP + 4 * SUB.H + SUB.GAP + G.PADY * 1.6 + G.BIG + G.LBL;   // the tallest submenu over the bar
+    const fitH = (H - 8 - Math.max(14, H * 0.025)) / tall, room = Math.max(scale, Math.min(fitW, fitH));
+    menuMax = room / scale;
+    if (m !== 1) { const s1 = m > 1 ? Math.min(scale * m, room) : scale * m; menuK = s1 / scale; scale = s1; }
+  }
   const s = scale, MOD = G.MOD * s, BIG = G.BIG * s, GAP = G.GAP * s, PADX = G.PADX * s, PADY = G.PADY * s, LBL = G.LBL * s * fs;
   const barW = base * s, barH = PADY + BIG + LBL + PADY * 0.6;
   const barX = (W - barW) / 2, barY = opts.barY != null ? opts.barY : H - barH - Math.max(14, H * 0.025);
@@ -33,7 +44,7 @@ export function layout(W, H, cfg, opts = {}) {
     return it;
   });
   const dividers = [items[2].cx + items[2].r + GAP / 2, items[3].cx + items[3].r + GAP / 2];
-  return { W, H, s, fs, hitPad: cfg.hitPad || 0, items, byKey: Object.fromEntries(items.map((i) => [i.key, i])), barX, barY, barW, barH, cy, dividers, labelY: cy + BIG / 2 + 12 * s, gap: GAP };
+  return { W, H, s, fs, hitPad: cfg.hitPad || 0, items, byKey: Object.fromEntries(items.map((i) => [i.key, i])), barX, barY, barW, barH, cy, dividers, labelY: cy + BIG / 2 + 12 * s, gap: GAP, menuK, menuMax };
 }
 
 function submenuOptions(key) {
@@ -46,9 +57,9 @@ function submenuOptions(key) {
 }
 export function submenuLayout(L, key) {
   const it = L.byKey[key], s = L.s, opts = submenuOptions(key), f = Math.sqrt(L.fs || 1);
-  const OW = (key === 'options' ? 214 : 176) * s * f, OH = 92 * s * f, CAP = 42 * s;
+  const OW = (key === 'options' ? SUB.WO : SUB.W) * s * f, OH = SUB.H * s * f, CAP = SUB.CAP * s;
   const h = CAP + opts.length * OH;
-  const x = clamp(it.cx - OW / 2, 8, L.W - OW - 8), bottom = L.barY - 14 * s, top = bottom - h;
+  const x = clamp(it.cx - OW / 2, 8, L.W - OW - 8), bottom = L.barY - SUB.GAP * s, top = bottom - h;
   return { key, x, top, w: OW, h, cap: { x, y: top, w: OW, h: CAP }, rects: opts.map((o, i) => ({ id: 'opt:' + key + ':' + o[0], value: o[0], label: o[1], x, y: top + CAP + i * OH, w: OW, h: OH })) };
 }
 export function modalLayout(L, m) {

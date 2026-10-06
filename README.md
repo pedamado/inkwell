@@ -19,6 +19,11 @@ Build 18 is build 17.1 (16.1 + the hand-gesture variant, tuned on a real recordi
 `index.html` lets you choose — and opens variants in separate windows for the two-screen setup. Every variant keeps its
 **own** settings in the browser (separate from builds 16 and 17).
 
+> **18.1 (6 October 2026) — view size.** Configuration → *View size*: the **canvas size** and the **menu size**, ×0.5–×2
+> (×1 = as designed: the canvas at 1 m), linked or each on its own, also from a carer's window; keys `+` `−` `0`. For a
+> person who sits nearer or farther than planned, or a headset that sits differently. At ×1 nothing changes (checked
+> against 18.0 bit for bit). See [Configuration](#configuration).
+>
 > **18.0 (6 October 2026) — drawing together.** Windows of the same browser in the same *room* share one drawing: each
 > person draws in their own colour and layer, sees the others' cursors (a ring with their name) and drawings in real
 > time, and anyone can open **another person's settings** in Configuration and change them live (a carer tuning the
@@ -178,6 +183,13 @@ A window that closes leaves the drawing (its layer goes from the others' windows
 Grouped in sections; every change is saved at once, for this variant only.
 
 - **Language** — the app's language, load a language file, download a template.
+- **View size** (18.1) — **canvas size** and **menu size**, ×0.5–×2; ×1 = as designed (the 1 × 1 m canvas at 1 m, ≈ 53°),
+  and the readout gives the distance each stands for (×1.25 = as at 0.80 m). **Link the two sizes** (on): one moves the
+  other by the same factor. The canvas: 2D — the paper, its layers, the grid and the agents zoom about the window's centre
+  (smaller: a quiet band around; larger: reach the edges with the assistive pan or a right-button drag); 18c — what is on
+  the 360° ring grows. The eyes' tolerances (dwell radius, smoothing) stay the same. The menu: its buttons, labels, icons,
+  hit areas, submenus and dialogs, plus the screens and messages; the menu bar never grows wider than the window
+  (×1.15 on a 1440-px laptop, ×1.40 on a 1920-px screen); this Configuration keeps its size.
 - **Activation (the Midas touch)** — menu dwell (0.8 s), Clear dwell (1.2 s), exit grace (200 ms), target allowance
   (+50 % invisible hit area), **dwell on the canvas starts the line** (on / off) and its time, **dwell on the canvas stops
   the line** (off; 18d: on), **escape saccade stops the line** (on; not in 18d), **… and switches Draw mode off** (on),
@@ -227,7 +239,8 @@ Or add the file to `i18n/` and list it in `i18n/languages.json` so everyone gets
 
 `q` pen down / up · `w` `s` thickness · `a` `d` line option · `o` `l` colour · `k` (or `z`) undo · `ç` (or `y`) redo ·
 `e` twice clear · `g` grid mode · `i` / `p` 3D view on / off (18a/18b/18d) · `r` recentre the canvas (18c: the view) ·
-`c` recentre the eye tracker (18a) or calibrate the reach (18d) · `h` camera preview (18d) · `f` full screen · `Esc`
+`c` recentre the eye tracker (18a) or calibrate the reach (18d) · `h` camera preview (18d) · `+` / `−` view size (the
+canvas, and the menu when linked) · `0` view ×1 · `f` full screen · `Esc`
 close (18a: otherwise the eye-tracker settings). In 18b and 18d a click on the canvas starts / stops the line; clicks on
 the menu act at once.
 
@@ -332,12 +345,28 @@ The engine's per-frame input: `{ now, dt, hudId, overHud, surf: {x, y}, gazeDegS
   Configuration shows a partner's settings by giving `openConfig` that partner's published settings, its variant, and
   callbacks that send instead of apply.
 
+### View size (18.1)
+
+- **2D.** `Z = canvasScale`: the paper's elements get `translate(−pan·Z) scale(Z)` (nothing extra at Z = 1); `A.pan` is
+  the surface point at the window's top left, so gaze → surface is `p / Z + pan` and surface → screen `(s − pan) · Z`
+  (grid, agents, partners' cursors). A change keeps the point at the window's centre in place. The surface keeps its
+  size and resolution (no rebuild, so the undo history stays; on 1× screens zoomed-in strokes look slightly soft).
+- **Two scales in the engine.** `engine.ppd` = surface px per degree **of the canvas** (ink widths, drips, splats, the
+  grid); `engine.eyePpd` = surface px per degree **of the view** (the canvas-dwell radius, the re-arm distance, the 1€
+  filter). 2D: `eyePpd = ppd / Z`. 18c: `ppd = 12 × canvasScale`, `eyePpd = 12` (the ring keeps its 12 px/° mapping).
+- **Menu.** `HUD.layout()` multiplies its scale by `menuScale`, never past the window's width or the height its tallest
+  submenu needs (`L.menuK`: what is shown; `L.menuMax`: this window's limit). 18c scales the menu panel mesh (the
+  ray-cast hit-testing follows) and the welcome panel. `menuScaleDom()` sets `body.menu-scaled` and `--menu-scale` (a CSS
+  `zoom` on the screens, the toasts' sizes) — only when ≠ ×1, capped at `min(W / 680, H / 510)`.
+- **Link.** `linkedScale(cfg, k, v)` (core.js) gives the other size; the window that moves a slider applies both (a
+  partner's window receives two `set` messages and does not link again).
+
 ### Settings
 
 `localStorage['inkwell18.<variant key>[.seatN].settings']` = `{ schema: 1, version, savedAt, cfg }`, where `cfg` holds **only the
 values that differ from the defaults** (so a better default in a later build reaches returning users). The agents are
 stored as `cfg.agents`; 18d's reach as `cfg.handBox` and its camera as `cfg.handCameraId`; the shared drawing as
-`shareOn`, `shareRoom`, `shareName`, `showPartners`. A second seat (`?seat=2`) adds `.seat2` before `.settings` (and to
+`shareOn`, `shareRoom`, `shareName`, `showPartners`; the view size (18.1) as `canvasScale`, `menuScale`, `scaleLink`. A second seat (`?seat=2`) adds `.seat2` before `.settings` (and to
 InkGaze's key). The language is global: `localStorage['inkwell18.lang']`; loaded language files: `inkwell18.lang.custom`.
 InkGaze keeps its calibration under `inkwell18.inkgaze`. Build 18 never reads or changes the keys of builds 16 and 17
 (`inkwell16.*`, `inkwell17.*`), so the builds can be compared side by side.
@@ -398,6 +427,7 @@ From the project's *Research & Practice Dossier* (§7.7–§7.10) and the HTC Vi
 | Thickness | 0.18° / 0.40° / 0.90° | visual-angle steps inside sharp central vision (dossier §7.8) |
 | Cursor | hidden while drawing; dashed when paused | the HTC Vive app: a visible cursor makes the eyes drift after it |
 | Intro dots | 64 px (+ hit area ≥ 1.6°) | the top of the requested 48–64 px: webcam gaze is accurate to ~2–4° |
+| View size | canvas ×1, menu ×1, linked | the design distance: the 1 × 1 m canvas at 1 m (≈ 53°); 0.5–1.5 m is the requirements' comfortable band (×0.67–×2) |
 | Agents | 1 (18d: none until the thumb comes out) | the pen has weight and inertia; more in Configuration |
 | 18d line toggle | dwell starts **and** pauses the line (0.8 s) | "pause to toggle" — the hand, unlike the eyes, can hold still without staring |
 | 18d pose hold | 120 ms (thumb 180 ms) | no flicker between poses; agents are not re-randomised by a wobbling thumb |
@@ -423,6 +453,12 @@ From the project's *Research & Practice Dossier* (§7.7–§7.10) and the HTC Vi
   classifier and the whole app: every pose and gesture read as performed, with one false tap (at a screen corner) and one
   0.25-s pause from a misread little finger with the hand held low and sideways. Other hands, lighting and cameras are
   still to be tried; the five bars in the camera preview show how each finger reads.
+- **18.1 view size:** at ×1 identical to 18.0 (pixels, layouts, hit-testing); canvas and menu sizes, the link (also
+  from a partner's window), the limits and the keys checked in 18b, 18c (preview) and 18d (scripted). **Limits:** the menu
+  bar is one row of seven buttons, so on a laptop it can grow only a little (×1.15 at 1440 × 900, ×1.02 at 1280 × 800) — a
+  two-row or vertical menu for larger sizes is an open design question; on 1× screens a zoomed-in canvas shows slightly
+  soft strokes; in 18c the menu bar already spans about ±27° at ×1 (the guidelines keep primary content in a 30° arc,
+  ±15°), ±32° at ×1.25 and ±45° at ×2. Not yet tried with people or on devices.
 - **Not yet tested on devices:** 18a with a real webcam session in Inkwell (InkGaze itself was tuned on two recordings);
   18c on a phone in a Cardboard viewer and on a WebXR headset.
 - The InkGaze window is English only. Phone performance of the 360° ring (8 textures of 675 × 1125 px) is untested.

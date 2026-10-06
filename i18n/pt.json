@@ -192,7 +192,8 @@
     "left": "{name} saiu do desenho.",
     "colour": "A sua cor no desenho partilhado: {color}.",
     "remoteSet": "{name} ajustou as suas definições.",
-    "sameSeat": "Outra janela usa {variant} com as mesmas definições: acrescente ?seat={seat} ao endereço desta janela para as manter separadas."
+    "sameSeat": "Outra janela usa {variant} com as mesmas definições: acrescente ?seat={seat} ao endereço desta janela para as manter separadas.",
+    "view": "Tela ×{canvas} · menu ×{menu}"
   },
   "about": {
     "title": "Sobre o Inkwell",
@@ -272,10 +273,12 @@
       "<li><b>Costas da mão viradas para a câmara, dedos para cima, puxadas na sua direção</b> — dobre os dedos para si e abra-os de novo, duas vezes (um aceno de «vem cá»): <b>Desfazer</b>, a sua última linha. Cada dois puxões desfazem mais uma.</li>",
       "<li>Teclas: <kbd>c</kbd> calibrar o alcance · <kbd>h</kbd> pré-visualização da câmara sim/não.</li>",
       "</ul>",
+      "<h3>Tamanho da vista (18.1)</h3>",
+      "<p>Configuração → <i>Tamanho da vista</i>: o <b>tamanho da tela</b> e o <b>tamanho do menu</b>, de ×0,5 a ×2 (×1 = como projetado: a tela a 1 m). Maior é como se estivesse mais perto, menor como se estivesse mais longe — para quem se senta mais longe ou mais perto do que o previsto, ou uns óculos que assentam de outra maneira. Ligados, movem-se juntos; desligados, cada um por si (o menu como um zoom de acessibilidade). Quem cuida pode ajustá-los a partir da sua janela (Definições de → essa pessoa). Teclas: <kbd>+</kbd>/<kbd>−</kbd> tela (e menu, se ligados) · <kbd>0</kbd> ambos de volta a ×1.</p>",
       "<h3>Afinar o «toque de Midas»</h3>",
       "<p>Em Configuração → Ativação: a permanência no menu (0,8 s), a permanência na tela, a tolerância de saída, a margem dos alvos (área de toque extra invisível), a velocidade de estabilização e o tamanho da fuga. Se as coisas disparam sozinhas, aumente a permanência; se parecem lentas, diminua-a.</p>",
       "<h3>Teclado / comando (assistentes)</h3>",
-      "<p><kbd>q</kbd> desenhar sim/não · <kbd>w</kbd>/<kbd>s</kbd> espessura · <kbd>a</kbd>/<kbd>d</kbd> tipo de linha · <kbd>o</kbd>/<kbd>l</kbd> cor · <kbd>k</kbd>/<kbd>ç</kbd> desfazer/refazer · <kbd>e</kbd>×2 limpar · <kbd>g</kbd> grelha · <kbd>i</kbd>/<kbd>p</kbd> vista 3D sim/não · <kbd>r</kbd> recentrar a tela · <kbd>c</kbd> recentrar o seguimento ocular (18a) ou calibrar o alcance (18d) · <kbd>h</kbd> pré-visualização da câmara (18d) · <kbd>f</kbd> ecrã inteiro · <kbd>Esc</kbd> fechar / definições do seguimento ocular.</p>",
+      "<p><kbd>q</kbd> desenhar sim/não · <kbd>w</kbd>/<kbd>s</kbd> espessura · <kbd>a</kbd>/<kbd>d</kbd> tipo de linha · <kbd>o</kbd>/<kbd>l</kbd> cor · <kbd>k</kbd>/<kbd>ç</kbd> desfazer/refazer · <kbd>e</kbd>×2 limpar · <kbd>g</kbd> grelha · <kbd>i</kbd>/<kbd>p</kbd> vista 3D sim/não · <kbd>r</kbd> recentrar a tela · <kbd>c</kbd> recentrar o seguimento ocular (18a) ou calibrar o alcance (18d) · <kbd>h</kbd> pré-visualização da câmara (18d) · <kbd>f</kbd> ecrã inteiro · <kbd>Esc</kbd> fechar / definições do seguimento ocular · <kbd>+</kbd>/<kbd>−</kbd> tamanho da vista · <kbd>0</kbd> vista ×1.</p>",
       "<h3>Desenhar juntos (18)</h3>",
       "<ul>",
       "<li>Abra uma <b>segunda janela</b> deste navegador (⌘N ou Ctrl+N) com outra variante e leve-a para o outro ecrã — por exemplo, <b>18a</b> para quem desenha com os olhos, <b>18d</b> para quem cuida e desenha com a mão. Cada janela usa a sua câmara (18d: o menu de câmara no primeiro ecrã; 18a: as definições do seguimento ocular). Juntam-se sozinhas — não usa a rede.</li>",
@@ -317,6 +320,7 @@
     "sub": "{variant} · guardada neste navegador para esta variante",
     "sections": {
       "language": "Idioma",
+      "view": "Tamanho da vista — tela e menu (como se mais perto ou mais longe)",
       "share": "Desenho partilhado",
       "activation": "Ativação — permanência, fuga, piscar (o toque de Midas)",
       "cursor": "Cursor (para onde olha)",
@@ -567,6 +571,18 @@
       "showPartners": {
         "label": "Mostrar os cursores dos outros",
         "help": "Um anel na cor de cada um, com o nome. Para quem desenha com os olhos, um cursor em movimento pode atrair o olhar: desligue-o na janela dessa pessoa (Definições de → essa pessoa)."
+      },
+      "canvasScale": {
+        "label": "Tamanho da tela",
+        "help": "A tela e tudo o que está nela — a tinta, a grelha, os agentes — como se estivesse mais perto (> ×1) ou mais longe (< ×1). O desenho do projeto assume a tela de 1 × 1 m a 1 m (≈ 53°): ×1,25 mostra-a como a 0,80 m, ×0,80 como a 1,25 m (a faixa confortável dos requisitos é 0,5–1,5 m). As tolerâncias próprias dos olhos (o raio da permanência, a suavização) mantêm-se. Maior do que a janela: ligue o deslocamento assistido para chegar às margens (ou arraste com o botão direito). 18c: a tela é um anel de 360° sem margem para crescer, por isso crescem a tinta, a grelha e os agentes."
+      },
+      "menuScale": {
+        "label": "Tamanho do menu",
+        "help": "O menu — botões, ícones, legendas e áreas de toque, os submenus e as janelas Limpar / Abrir — e os ecrãs (início, pontos iniciais, boas-vindas, Sobre, Ajuda), como um zoom de acessibilidade. Esta Configuração mantém o tamanho, para poder sempre desfazer. Num ecrã, o menu nunca fica mais largo do que a janela."
+      },
+      "scaleLink": {
+        "label": "Ligar os dois tamanhos",
+        "help": "Mover um tamanho move o outro pelo mesmo fator (cada um entre ×0,5 e ×2). Desligado: cada um por si."
       }
     },
     "language": {
@@ -653,6 +669,10 @@
       "me": "esta janela — {name}"
     },
     "subRemote": "{name} — cada alteração aplica-se de imediato nessa janela, e fica lá guardada",
+    "view": {
+      "asIf": "como a {m} m",
+      "capped": "a barra do menu cabe até ×{k} nesta janela"
+    },
     "remote": {
       "footer": "{key} · alterado e guardado na janela dessa pessoa.",
       "trackerHelp": "Estes botões atuam na janela dessa pessoa (um recentrar ou uma calibração começa lá, no ecrã dela).",

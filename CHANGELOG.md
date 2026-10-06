@@ -1,5 +1,46 @@
 # Inkwell — changelog
 
+## 18.1.0 — 2026-10-06 · `inkwell-18` · view size (canvas and menu)
+
+Asked for by Pedro Amado after the first tests. The design assumes the person **1 m from the canvas** — the 1 × 1 m
+canvas at 1 m (≈ 53°), the menu on the same plane (*Visual Interface Guidelines — VR settings and requirements (Dots)*;
+requirements matrix, C1: "world-space, fixed depth; 0.5–1.5 m") — but people sit nearer or farther, or shift in the
+room: some found it too near, others too far. Configuration → **View size** (every variant) adds two scales, **×1 by
+default**; at ×1 every variant draws, lays out and hit-tests exactly as 18.0 (checked bit for bit, below).
+
+- **Canvas size**, ×0.5 – ×2: the canvas as if nearer (> ×1) or farther (< ×1); the readout gives the distance it stands
+  for (×1.25 = as at 0.80 m). **2D (18a / 18b / 18d):** the paper, its layers, the grid and the agents zoom about the
+  window's centre — a smaller canvas sits in a quiet band, a larger one overflows the window (reach its edges with the
+  assistive pan, or drag with the right button). **18c:** the 360° ring has no edge to grow, so what is on it — the ink,
+  the grid, the agents — grows (in degrees) instead; the drawing so far keeps its place. In both, **the eyes' own
+  tolerances stay in degrees of the view**: the dwell radius and the 1€ smoothing do not change with the canvas
+  (`engine.eyePpd`, beside `engine.ppd`).
+- **Menu size**, ×0.5 – ×2: the menu — buttons, icons, labels, hit areas, the submenus, the Clear and Open dialogs —
+  and the screens (start, intro dots, welcome, About, Help) and the messages, as an accessibility zoom. On a screen the
+  menu bar stops where the window ends (seven buttons in one row: up to ×1.15 on a 1440 × 900 laptop, ×1.40 on
+  1920 × 1080 — the readout says so), and the screens stop at what the window holds. **18c** scales the menu panel (about
+  its centre, at the same height) and the welcome panel. The Configuration keeps its size, so the setting can always be
+  undone.
+- **Link the two sizes** (on by default): moving one moves the other by the same factor; off, each on its own.
+- **A carer can set them from their own window** (Configuration → *Settings of* → the person); linked, both sizes are sent.
+- Keys: `+` / `−` the canvas size in steps of 0.05 (and the menu, when linked) · `0` both back to ×1.
+- Opening a drawing keeps your view size (it belongs to the person and the room, not to the drawing); *Reset to
+  defaults* returns both to ×1. Stored as `canvasScale`, `menuScale`, `scaleLink`.
+
+### Checked
+- **×1 = 18.0, bit for bit:** a copy of 18.0 and 18.1, driven by the same scripted gaze path on a pinned clock with
+  seeded randomness, give identical ink pixels, menu overlay (a hovered button, an open submenu), paper transforms, pen
+  and agent positions; `HUD.layout`, `submenuLayout`, `modalLayout` and hit-testing are identical over 416 combinations of
+  window size and target allowance (and the VR menu layout).
+- 18b: canvas ×1.25, ×0.75, ×1.4 (the gaze lands under the cursor on the zoomed paper, the canvas-dwell radius stays 1° on
+  the screen, the band below ×1); the link (in the window, and from a partner's window — both values arrive once and are
+  saved there); the menu bar's window limit and its note; the screens' zoom and its limit (×2 asked in 1024 × 768 → ×1.51,
+  no overlaps); `+` `−` `0`; 18a, 18b, 18c, 18d load without console errors.
+- 18c (preview): canvas ×1.5 → the medium line 0.60°, the grid 4.5°, the head's dwell tolerance unchanged; menu ×1.5 →
+  the menu and welcome panels ×1.5, and a dwell on the larger Draw button still fires.
+- **Not yet:** the sizes with people (where they sit, which sizes they choose), on a phone in a Cardboard viewer, on a
+  headset.
+
 ## 18.0.0 — 2026-10-06 · `inkwell-18` · drawing together (two windows, one drawing)
 
 Build 18 is 17.1 (all four variants, renamed 18a–18d) plus **the shared drawing**, asked for by Pedro Amado for a
