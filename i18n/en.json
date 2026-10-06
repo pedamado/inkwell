@@ -1,0 +1,501 @@
+{
+  "meta": {
+    "code": "en",
+    "name": "English",
+    "nativeName": "English",
+    "dir": "ltr",
+    "version": "16.1.0",
+    "translators": "",
+    "notes": "Reference language: it holds every key the app uses. To add a language, copy this file (e.g. es.json), set meta.code / meta.name / meta.nativeName, and translate the VALUES only: keep the keys, the {placeholders} and the HTML tags. Missing keys fall back to English. Then list the file in languages.json, or load it in the app: Configuration → Language → Load a language file."
+  },
+  "variant": {
+    "a": "eye tracker",
+    "b": "mouse cursor",
+    "c": "cardboard",
+    "title": "Inkwell {id} · {name}"
+  },
+  "common": {
+    "back": "Back",
+    "close": "Close",
+    "cancel": "Cancel",
+    "scrollUp": "Scroll up",
+    "scrollDown": "Scroll down",
+    "language": "Language",
+    "languages": "Languages"
+  },
+  "gate": {
+    "start": "Start",
+    "trackerSettings": "Eye-tracker settings",
+    "useMouse": "Use the mouse instead",
+    "mouseIntro": "The mouse pointer plays the part of the eyes: look (point) and wait, no clicks needed. Clicks also work.",
+    "trackerFailed": "The eye tracker could not start.",
+    "status": {
+      "invoked": "Starting the eye tracker…",
+      "settings": "The eye-tracker settings are open: press Start (or Resume), then look at each dot until its circle closes.",
+      "loading": "Loading the camera and the face model…",
+      "warming": "Warming up the face model…",
+      "ready-to-calibrate": "Ready to calibrate: press Start.",
+      "calibrating": "Calibrating: look at each dot until its circle closes.",
+      "paused": "The eye tracker is paused.",
+      "closed": "The eye-tracker settings were closed without starting. Open them again to calibrate, or use the mouse version."
+    }
+  },
+  "intro": {
+    "hintEyes": "Look at each dot until it pops",
+    "hintPointer": "Point at each dot and wait until it pops",
+    "hintHead": "Turn your head to each dot and wait until it pops",
+    "dot": "Dot {n}",
+    "aria": "Warm-up: {hint}"
+  },
+  "splash": {
+    "kicker": "<a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX</a> · gaze drawing studio · {variant}",
+    "play": "play",
+    "about": "About",
+    "help": "Help",
+    "config": "Configurations",
+    "more": "More",
+    "credit1": "A prototype of the <a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX research project</a> · PI Eliana Penedos and the <a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX</a> team",
+    "credit2": "Interface, expressive line and drawing agents by Pedro Amado · code written with Gemini and Claude"
+  },
+  "chooser": {
+    "title": "Choose a variant",
+    "a": "Webcam eye tracking with InkGaze.js — the main prototype.",
+    "b": "The mouse plays the eyes: the same dwell and escape, for quick tests.",
+    "c": "Your head aims: a 360° canvas on a phone in a Cardboard viewer, in a WebXR headset, or in a preview.",
+    "open": "Open",
+    "docs": "Documentation",
+    "readme": "Read me",
+    "changelog": "Changelog",
+    "prd": "Requirements (PRD)",
+    "inkgaze": "InkGaze.js library"
+  },
+  "hud": {
+    "line": {
+      "rigid": "Rigid Line",
+      "dynamic": "Dynamic Line",
+      "fluid": "Fluid Line"
+    },
+    "thickness": {
+      "thin": "Thin Line",
+      "medium": "Medium Line",
+      "thick": "Thick Line"
+    },
+    "color": {
+      "black": "Black Color",
+      "red": "Red Color",
+      "blue": "Blue Color",
+      "white": "White Color"
+    },
+    "draw": {
+      "off": "Press to Draw",
+      "on": "Press to Pause"
+    },
+    "grid": {
+      "off": "Freehand Mode",
+      "always": "Grid Mode (on)",
+      "feedback": "Grid Mode (feedback)",
+      "hidden": "Grid Mode (hidden)"
+    },
+    "undo": "Undo",
+    "options": "Options",
+    "opt": {
+      "clear": "Clear Drawing",
+      "save": "Save Drawing",
+      "open": "Open Drawing",
+      "config": "Configuration"
+    }
+  },
+  "modal": {
+    "clearTitle": "Clear the whole drawing?",
+    "clearBody1": "Everything on the canvas is erased.",
+    "clearBody2": "Undo can still bring it back.",
+    "clear": "Clear",
+    "cancel": "Cancel",
+    "openTitle": "Open a saved drawing",
+    "openEmpty": "No drawings saved in this browser yet.",
+    "loadFile": "Load a file…",
+    "clickTap": "click / tap"
+  },
+  "badge": {
+    "faceLost": "Face not visible to the camera",
+    "tracker": "Eye tracker: {state}"
+  },
+  "toast": {
+    "libMissing": "InkGaze (lib/inkgaze.js) did not load.",
+    "recentreHint": "The eye tracker suggests a recentre (one dot): press c, or Options → Configuration → Recentre.",
+    "fileDwell": "Opening a file needs a click or a tap (browsers allow file dialogs only then). Look at a recent drawing above instead.",
+    "saving": "Saving the drawing…",
+    "saved": "Saved {png} and {json} (a copy also stays in this browser).",
+    "saveFailed": "Saving failed: {error}",
+    "nothingOpened": "Nothing was opened.",
+    "restored": "Drawing and settings restored ({date}).",
+    "calRestored": " Your eye-tracker calibration too: a quick recentre (c) is advised.",
+    "calNotLoaded": " (The saved calibration was not loaded: {reason}.)",
+    "calOtherCamera": "different camera",
+    "defaults": "All settings are back to their defaults.",
+    "storageCleared": "Saved settings cleared for {key} (the current ones stay until you reload).",
+    "cleared": "Cleared (Undo brings it back).",
+    "recentred": "Canvas recentred.",
+    "notSession": "This is not an Inkwell session file.",
+    "badFile": "This file is not a valid Inkwell session (JSON).",
+    "language": "Language: {name}",
+    "languageLoaded": "Language file loaded: {name} ({count} texts).",
+    "languageBad": "This is not an Inkwell language file: {reason}"
+  },
+  "about": {
+    "title": "About Inkwell",
+    "html": [
+      "<p class=\"lead\"><b>Inkwell</b> is the gaze drawing studio of <b><a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX — Drawing for Social Re-connectivity</a></b>, an exploratory research project of the Faculty of Fine Arts of the University of Porto (FBAUP) funded by FCT (2023.11224.PEX). SiX explores drawing as expression and social re-connection for people with partial to complete <b>Locked-In Syndrome</b> (LIS) — for whom the eyes may be the only reliable channel — through co-design with the Portuguese ALS Association (APELA).</p>",
+      "<h3>Where this prototype comes from</h3>",
+      "<p>The line started as an EyeWriter-style experiment and grew through <i>GazeDraw</i> (a lattice of dwell dots), the WebXR <i>Gaze Draw</i> builds 12–15 (continuous ink, autonomous drawing agents, gaze amplification, a grid-assisted mode, a helper controller layer) to <b>Inkwell 16</b>. A first evaluation with able-bodied participants (2026) showed that, below a threshold of <i>correspondence</i> between intention and trace, gaze drawing collapses into pointing — so calibration and per-user tuning are preconditions for expression. Inkwell 16 answers with a calibrated webcam eye tracker, per-user settings, and alternatives to dwell (the escape saccade, the blink).</p>",
+      "<h3>What this web prototype is for</h3>",
+      "<p>A fast, open test bench for the <b>interaction design</b> of gaze drawing. One app, three variants: <b>16a</b> webcam eye tracker (the main one), <b>16b</b> mouse cursor (the same behaviours, for quick tests), <b>16c</b> Cardboard / VR head-mount with a 360° canvas — so ideas can be tried anywhere before they move to the project's main prototype.</p>",
+      "<h3>The main SiX prototype</h3>",
+      "<p>The SiX application for the <b>HTC Vive Focus Vision</b> (Unity, eye tracking in the headset) is the project's main prototype: built by the team led by <b>Eliana Penedos-Santiago</b> and developed by <b>Manuel Silva</b> (CITAR · Universidade Católica Portuguesa).</p>",
+      "<h3>InkGaze.js</h3>",
+      "<p>An additional output of this work: <b>InkGaze.js</b>, a drop-in webcam eye-tracking library that refines the approach of browser trackers such as WebGazer for gaze-only drawing — 5- or 9-dot calibration with a shrinking bubble, head-movement compensation, a model that keeps learning from what you look at, and blink and saccade events. Inkwell 16a runs on it.</p>",
+      "<h3>Credits</h3>",
+      "<p><b><a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX — Drawing for Social Re-connectivity</a></b> (FBAUP · FCT 2023.11224.PEX). This prototype exists within, and because of, the <a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX project</a>. <b>Principal Investigator:</b> Eliana Penedos-Santiago (ID+ · FBAUP). <b>Team:</b> Andreia Pinto de Sousa, Bruno Giesteira, Cláudia Lima, Pedro Amado, Sílvia Simões, Viviane Peçaibes. <b>Consultants:</b> Filipe Gonçalves (APELA), Miguel Alves-Ferreira (CGPP-IBMC / i3S). <b>Collaborators:</b> Lara Portelinha, Manuel Silva, Vasco Praça. <b>Partners:</b> APELA · ADITGAMES · i3S / IBMC · Fraunhofer AICOS.</p>",
+      "<dl class=\"credits\">",
+      "<dt>Concept and interaction design</dt>",
+      "<dd>Eliana Penedos-Santiago, Andreia Pinto de Sousa, Manuel Silva and Pedro Amado (<a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX</a> design prototyping, Task 3, led by Pedro Amado).</dd>",
+      "<dt>Interface design, the expressive line and the drawing agents</dt>",
+      "<dd>Pedro Amado (FBAUP / i2ADS). This covers the rigid, dynamic and fluid line; variable thickness, drips and splats; and the agentic drawing mode (boids). Conceived and developed in this web prototype since May 2026.</dd>",
+      "<dt>Grid (dot) mode</dt>",
+      "<dd>From the <a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX</a> team’s first prototypes and from Andreia Pinto de Sousa’s and Eliana Penedos-Santiago’s work with post-graduate students.</dd>",
+      "<dt>From the <a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX</a> VR application</dt>",
+      "<dd>Settings and interaction decisions tested by Manuel Silva in the HTC Vive Focus Vision app (Unity) — for example, the hidden drawing cursor and the Clear confirmation.</dd>",
+      "<dt>Web prototype</dt>",
+      "<dd>Directed by Pedro Amado. Code written with AI models: Google Gemini 2.5 Pro and 3.1 Pro (first builds) and Anthropic Claude Opus 5.5 (the full code of Inkwell 16 and InkGaze.js).</dd>",
+      "<dt>InkGaze.js</dt>",
+      "<dd>Concept and design by Pedro Amado; development by Claude Opus 5.5 (October 2026).</dd>",
+      "<dt>Project</dt>",
+      "<dd><a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">six.fba.up.pt</a> · Inkwell {version}</dd>",
+      "</dl>"
+    ],
+    "translation": "Translation: {translators}"
+  },
+  "help": {
+    "title": "Help",
+    "videoSoon": "Video tutorial — coming soon",
+    "html": [
+      "<h3>Getting started</h3>",
+      "<ul>",
+      "<li><b>16a · eye tracker</b> — the InkGaze settings open first: press <b>Start</b> and look at each dot until its circle closes (5 dots; 9 for the best fit). A saved calibration only needs a quick check. Then the app takes over.</li>",
+      "<li><b>16b · mouse cursor</b> — the same app and behaviours, driven by the pointer (no camera).</li>",
+      "<li><b>16c · cardboard</b> — on a phone in a Cardboard viewer (or a WebXR headset): your head aims. Turn around: the canvas is 360°.</li>",
+      "</ul>",
+      "<h3>The first screen and the welcome screen</h3>",
+      "<p>Look at each of the three dots until it turns red and pops (they grow a little while you look). Then <b>play</b> opens the studio; <b>About</b>, <b>Help</b> and <b>Configurations</b> are at the bottom, the languages at the top. Everything works by looking (a dwell, 0.8 s) or by a click.</p>",
+      "<h3>The menu (bottom)</h3>",
+      "<ul>",
+      "<li><b>Line</b> — <i>Rigid</i> (heavily smoothed, constant width), <i>Dynamic</i> (balanced; slow = thick, fast = thin), <i>Fluid</i> (closest to your gaze, alive and expressive; drips and splats).</li>",
+      "<li><b>Thickness</b> — <i>Thin</i> (pencil), <i>Medium</i> (marker), <i>Thick</i> (broad marker): set in degrees of visual angle (0.18°, 0.40°, 0.90°) so each is a clear visual jump that stays inside sharp central vision.</li>",
+      "<li><b>Colour</b> — Black, Red, Blue, White.</li>",
+      "<li><b>Press to Draw / Press to Pause</b> (centre) — the pencil on or off the desk.</li>",
+      "<li><b>Grid</b> — <i>Freehand</i>, or a lattice of dwell dots: <i>on</i> (always visible), <i>feedback</i> (a dot flashes when you look), <i>hidden</i>. Dwell a dot to start, the next to draw a segment, the same dot again (or an escape saccade) to stop.</li>",
+      "<li><b>Undo</b> — the last line (repeatable).</li>",
+      "<li><b>Options</b> — <i>Clear Drawing</i> (asks for confirmation: a longer, uninterrupted look at <i>Clear</i>), <i>Save Drawing</i> (a PNG image + a JSON session with the settings and your calibration), <i>Open Drawing</i> (your recent drawings, or a JSON file with a click), <i>Configuration</i> (including the language).</li>",
+      "</ul>",
+      "<h3>Drawing</h3>",
+      "<ol>",
+      "<li><b>Press to Draw.</b></li>",
+      "<li>Look where the line should begin and hold your gaze still: the ring around the cursor fills and the line starts (you can switch this dwell off in Configuration: then the line starts as soon as your gaze settles).</li>",
+      "<li>Draw by moving your eyes. The agent (a small weighted pen) follows your gaze and lays the ink.</li>",
+      "<li>To stop, make a <b>quick, large look away</b> (the <i>escape saccade</i>): the line ends and the studio returns to rest. Optional: keep Draw on after an escape, stop with a dwell, or with a long blink (16a).</li>",
+      "</ol>",
+      "<h3>Agents, amplification, pan</h3>",
+      "<p>By default one agent draws. Add, remove, randomise or tune agents in Configuration (speed, spring, damping, mass, jitter), or pick a preset. Gaze amplification makes small eye movements reach further; the assistive pan (off by default) scrolls a larger canvas when you reach its edge.</p>",
+      "<h3>VR (16c)</h3>",
+      "<p>Turn your head: the canvas wraps all around you. The menu waits a moment, then glides to stay below your eyes. Look down at it to use it; double-tap the screen to recentre.</p>",
+      "<h3>Fine-tuning the Midas touch</h3>",
+      "<p>In Configuration → Activation: the menu dwell (0.8 s), the canvas dwell, the exit grace, the target allowance (invisible extra hit area), the settle speed, and the escape size. If things fire by themselves, raise the dwell; if they feel slow, lower it.</p>",
+      "<h3>Keyboard / controller (helpers)</h3>",
+      "<p><kbd>q</kbd> draw on/off · <kbd>w</kbd>/<kbd>s</kbd> thickness · <kbd>a</kbd>/<kbd>d</kbd> line option · <kbd>o</kbd>/<kbd>l</kbd> colour · <kbd>k</kbd>/<kbd>ç</kbd> undo/redo · <kbd>e</kbd>×2 clear · <kbd>g</kbd> grid · <kbd>i</kbd>/<kbd>p</kbd> 3D view on/off · <kbd>r</kbd> recentre the canvas · <kbd>c</kbd> recentre the eye tracker (16a) · <kbd>f</kbd> full screen · <kbd>Esc</kbd> close / eye-tracker settings.</p>",
+      "<h3>Languages</h3>",
+      "<p>English and Portuguese are included. To add or correct a language, copy <code>i18n/en.json</code>, translate the texts, and load it in Configuration → Language (it stays in this browser), or add it to the <code>i18n</code> folder and to <code>languages.json</code>.</p>",
+      "<h3>Privacy</h3>",
+      "<p>The camera image never leaves your device. Settings and saved drawings stay in this browser unless you save files.</p>"
+    ]
+  },
+  "orbit": {
+    "title": "3D analysis view · experimental",
+    "keys": "orbit o/l pitch · k/ç yaw · a/d roll · w/s zoom · p back"
+  },
+  "vr": {
+    "intro": "Put the phone in a Cardboard viewer (or use a WebXR headset). Your head aims: look at something and wait — a dwell selects. Turn around: the canvas is all around you.",
+    "start": "Start (this phone)",
+    "enterXR": "Enter VR (WebXR headset)",
+    "preview": "Look-around preview (drag to look)",
+    "sensorsDenied": "Motion sensors are not available or were not allowed: drag to look around (preview).",
+    "rotate": "Turn the phone sideways for the two-eye view.",
+    "recentred": "View recentred.",
+    "tapHint": "Double-tap to recentre · one tap selects what you aim at",
+    "xrFailed": "WebXR could not start: {reason}",
+    "webgl": "This device cannot show the 3D view (WebGL is not available)."
+  },
+  "cfg": {
+    "title": "Configuration",
+    "close": "Close the configuration",
+    "sub": "{variant} · saved in this browser for this variant",
+    "sections": {
+      "language": "Language",
+      "activation": "Activation — dwell, escape, blink (the Midas touch)",
+      "cursor": "Cursor (where you look)",
+      "line": "Line",
+      "ink": "Ink behaviour",
+      "agents": "Agents (boids)",
+      "amp": "Gaze amplification & assistive pan",
+      "grid": "Grid mode",
+      "vr": "VR — Cardboard / headset",
+      "tracker": "Eye tracker (InkGaze)",
+      "data": "Settings"
+    },
+    "items": {
+      "menuDwellMs": {
+        "label": "Menu dwell",
+        "help": "Look at a button this long to press it (research default 0.8 s)."
+      },
+      "confirmDwellMs": {
+        "label": "Clear-confirm dwell",
+        "help": "Clear needs a longer, uninterrupted dwell; looking away cancels it at once."
+      },
+      "graceMs": {
+        "label": "Exit grace",
+        "help": "A glance away shorter than this does not reset a dwell (150–250 ms recommended)."
+      },
+      "hitPad": {
+        "label": "Target allowance",
+        "help": "Invisible extra hit area around buttons and dots (≥ +50 % recommended); neighbours never overlap.",
+        "unit": "area"
+      },
+      "dwellStart": {
+        "label": "Dwell on the canvas starts the line",
+        "help": "Off: after Press to Draw the line starts as soon as your gaze settles on the canvas."
+      },
+      "canvasDwellMs": {
+        "label": "Canvas dwell"
+      },
+      "dwellStop": {
+        "label": "Dwell on the canvas stops the line",
+        "help": "Off by default: slow drawing can read as a stop. The escape saccade is the stop."
+      },
+      "escapeStop": {
+        "label": "Escape saccade stops the line",
+        "help": "A quick, large look-away lifts the pen."
+      },
+      "escapePauses": {
+        "label": "… and switches Draw mode off",
+        "help": "On: after an escape, Press to Draw again for the next line. Off: Draw stays on, and the next line starts with a canvas dwell once your gaze has moved on from where the escape landed."
+      },
+      "escapeAmplitude": {
+        "label": "Escape size",
+        "help": "How far the gaze must jump (share of the screen diagonal, within 200 ms)."
+      },
+      "escapeDegS": {
+        "label": "Escape head speed",
+        "help": "A head flick faster than this lifts the pen."
+      },
+      "blinkToggle": {
+        "label": "Long blink starts / stops the line",
+        "help": "A deliberate blink (≥ 0.4 s, set in the eye-tracker settings) toggles the pen."
+      },
+      "settleDegS": {
+        "label": "Settle speed",
+        "help": "The gaze must slow below this before a canvas or grid dwell counts."
+      },
+      "dwellRadiusDeg": {
+        "label": "Dwell tolerance",
+        "help": "How far the gaze may wander during a canvas dwell."
+      },
+      "cursorDrawing": {
+        "label": "Show the cursor while drawing",
+        "help": "Off by default, as in the HTC Vive app: a visible cursor invites the eyes to follow it and drift. The ink itself shows where the pen is (the agents' markers hide too)."
+      },
+      "cursorPaused": {
+        "label": "Show the cursor while paused",
+        "help": "On by default: a dashed light-grey circle shows where you are looking when Draw is off, after an escape, or after a dwell stop."
+      },
+      "lineMode": {
+        "label": "Line option"
+      },
+      "thickness": {
+        "label": "Thickness"
+      },
+      "color": {
+        "label": "Colour"
+      },
+      "ppd": {
+        "label": "Pixels per degree",
+        "help": "Turns the thickness in degrees into pixels: ~40 for a laptop at 55 cm, ~50 for a monitor at 70 cm."
+      },
+      "lineParams.rigid.0": {
+        "label": "Rigid — min cutoff",
+        "help": "1€ filter: lower = smoother at rest (more lag)."
+      },
+      "lineParams.rigid.1": {
+        "label": "Rigid — speed response (β)"
+      },
+      "lineParams.dynamic.0": {
+        "label": "Dynamic — min cutoff"
+      },
+      "lineParams.dynamic.1": {
+        "label": "Dynamic — speed response (β)"
+      },
+      "lineParams.fluid.0": {
+        "label": "Fluid — min cutoff"
+      },
+      "lineParams.fluid.1": {
+        "label": "Fluid — speed response (β)",
+        "help": "Higher β = less lag when the gaze moves fast."
+      },
+      "cursorSmooth": {
+        "label": "Cursor responsiveness",
+        "help": "1 = the cursor sits exactly on the gaze stream; lower = extra smoothing of the reticle."
+      },
+      "engorge": {
+        "label": "Engorge when still",
+        "help": "Nearly still, the line swells by up to this much (Fluid / Dynamic)."
+      },
+      "slowDegS": {
+        "label": "Widest at (slow)"
+      },
+      "fastDegS": {
+        "label": "Thinnest at (fast)"
+      },
+      "drips": {
+        "label": "Drips (hold still)"
+      },
+      "dripSpeed": {
+        "label": "Drip below speed"
+      },
+      "dripInt": {
+        "label": "Drip interval"
+      },
+      "splats": {
+        "label": "Splats (sharp turns)"
+      },
+      "splatThr": {
+        "label": "Splat threshold (|Δv|)"
+      },
+      "splatInt": {
+        "label": "Splat interval"
+      },
+      "gazeAmp": {
+        "label": "Gaze amplification",
+        "help": "Above 1×, a lighter ghost cursor (the drawing origin) reaches further than your gaze; the reticle stays on the gaze."
+      },
+      "panEnabled": {
+        "label": "Edge-pan when reaching the comfort box",
+        "help": "A larger canvas scrolls when the aim reaches the box edge (off by default)."
+      },
+      "comfortFrac": {
+        "label": "Comfort box"
+      },
+      "panRate": {
+        "label": "Pan speed"
+      },
+      "worldScale": {
+        "label": "Canvas size (pan on)"
+      },
+      "gridSpacingDeg": {
+        "label": "Dot spacing"
+      },
+      "gridDotDeg": {
+        "label": "Dot size"
+      },
+      "gridPadDeg": {
+        "label": "Jitter padding",
+        "help": "Extra hit tolerance around each dot."
+      },
+      "stereo": {
+        "label": "Stereo (two eyes) on phones",
+        "help": "Off: one full-screen view (look-around preview)."
+      },
+      "headGain": {
+        "label": "Head sensitivity"
+      },
+      "ipd": {
+        "label": "Eye separation (IPD)"
+      },
+      "distort": {
+        "label": "Lens distortion",
+        "help": "Barrel correction for Cardboard lenses (0 = none). The whole view always fits: no cropping."
+      },
+      "vrZoom": {
+        "label": "Field of view zoom"
+      },
+      "followDelayMs": {
+        "label": "Menu follow delay",
+        "help": "After you turn, the menu waits this long, then eases in and out to below your eyes."
+      },
+      "followMs": {
+        "label": "Menu follow time"
+      },
+      "hudPitchDeg": {
+        "label": "Menu height"
+      },
+      "invertX": {
+        "label": "Invert head aim (left / right)"
+      },
+      "invertY": {
+        "label": "Invert head aim (up / down)"
+      }
+    },
+    "language": {
+      "current": "Language of the app",
+      "load": "Load a language file…",
+      "template": "Download the current language (template)",
+      "remove": "Remove the loaded {name}",
+      "help": "To add or correct a language: download the template, translate the texts (keep the keys, the {placeholders} and the HTML tags), then load it here — it stays in this browser. Or add the file to the app's i18n folder and list it in languages.json. The eye-tracker window (InkGaze) is in English."
+    },
+    "agents": {
+      "presets": "Presets (agents + amplification):",
+      "none": "No agents: the pen sits <b>directly</b> on the (amplified) gaze.",
+      "agent": "Agent {n}",
+      "randomise": "Randomise this agent",
+      "reset": "Reset to the template",
+      "remove": "Remove this agent",
+      "add": "+ Add agent",
+      "randomiseAll": "Randomise all",
+      "template": "Template for new, randomised and reset agents:",
+      "templatePrefix": "template {label}",
+      "speed": "speed",
+      "spring": "spring",
+      "damp": "damping",
+      "mass": "mass",
+      "jitter": "jitter"
+    },
+    "presets": {
+      "direct": "Direct (no agent)",
+      "assisted": "Assisted (1 agent)",
+      "amplified": "Amplified direct",
+      "tremor": "Tremor-steady",
+      "limited": "Limited motion",
+      "springy": "Springy",
+      "calli": "Calligraphic",
+      "chorus": "Chorus (3 agents)",
+      "swarm": "Swarm (5 agents)"
+    },
+    "tracker": {
+      "notRunning": "The eye tracker is not running.",
+      "calibrated": "Calibrated · {points} dots · {model}",
+      "notCalibrated": "Not calibrated",
+      "fps": " · camera {fps} fps",
+      "hz": " · {hz} Hz to the app",
+      "settings": "Eye-tracker settings",
+      "recentre": "Recentre (1 dot)",
+      "cal5": "Calibrate · 5 dots",
+      "cal9": "Calibrate · 9 dots",
+      "help": "Smoothing, head influence, data rate, long-blink length and camera are in the eye-tracker settings (Esc)."
+    },
+    "data": {
+      "reset": "Reset all to defaults",
+      "clearSaved": "Clear saved settings",
+      "footer": "Inkwell {version} · {key} · every change is saved at once.",
+      "about": "About",
+      "help": "Help",
+      "start": "Start screen"
+    }
+  }
+}

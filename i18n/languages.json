@@ -1,0 +1,8 @@
+{
+  "default": "en",
+  "notes": "The languages bundled with Inkwell. To add one: put its file in this folder (copy en.json, translate the values) and add a line here. Users can also load a language file in the app (Configuration → Language), which stays in their browser.",
+  "languages": [
+    { "code": "en", "file": "en.json", "nativeName": "English" },
+    { "code": "pt", "file": "pt.json", "nativeName": "Português" }
+  ]
+}

@@ -1,0 +1,501 @@
+{
+  "meta": {
+    "code": "pt",
+    "name": "Portuguese",
+    "nativeName": "Português",
+    "dir": "ltr",
+    "version": "16.1.0",
+    "translators": "Claude Opus 5.5 (português europeu) — a rever",
+    "notes": "Português europeu. Traduza apenas os VALORES: mantenha as chaves, os {marcadores} e as etiquetas HTML. As chaves em falta são mostradas em inglês."
+  },
+  "variant": {
+    "a": "seguimento ocular",
+    "b": "cursor do rato",
+    "c": "cardboard",
+    "title": "Inkwell {id} · {name}"
+  },
+  "common": {
+    "back": "Voltar",
+    "close": "Fechar",
+    "cancel": "Cancelar",
+    "scrollUp": "Deslocar para cima",
+    "scrollDown": "Deslocar para baixo",
+    "language": "Idioma",
+    "languages": "Idiomas"
+  },
+  "gate": {
+    "start": "Começar",
+    "trackerSettings": "Definições do seguimento ocular",
+    "useMouse": "Usar o rato",
+    "mouseIntro": "O ponteiro do rato faz o papel dos olhos: olhe (aponte) e espere — não precisa de clicar. Os cliques também funcionam.",
+    "trackerFailed": "Não foi possível iniciar o seguimento ocular.",
+    "status": {
+      "invoked": "A iniciar o seguimento ocular…",
+      "settings": "As definições do seguimento ocular estão abertas: carregue em «Start» (ou «Resume») e olhe para cada ponto até o círculo se fechar.",
+      "loading": "A carregar a câmara e o modelo facial…",
+      "warming": "A preparar o modelo facial…",
+      "ready-to-calibrate": "Pronto para calibrar: carregue em «Start».",
+      "calibrating": "A calibrar: olhe para cada ponto até o círculo se fechar.",
+      "paused": "O seguimento ocular está em pausa.",
+      "closed": "As definições do seguimento ocular foram fechadas sem iniciar. Abra-as de novo para calibrar, ou use a versão com rato."
+    }
+  },
+  "intro": {
+    "hintEyes": "Olhe para cada ponto até ele rebentar",
+    "hintPointer": "Aponte para cada ponto e espere até ele rebentar",
+    "hintHead": "Rode a cabeça para cada ponto e espere até ele rebentar",
+    "dot": "Ponto {n}",
+    "aria": "Aquecimento: {hint}"
+  },
+  "splash": {
+    "kicker": "<a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX</a> · estúdio de desenho com o olhar · {variant}",
+    "play": "começar",
+    "about": "Sobre",
+    "help": "Ajuda",
+    "config": "Configurações",
+    "more": "Mais",
+    "credit1": "Um protótipo do <a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">projeto de investigação SiX</a> · Investigadora Responsável Eliana Penedos e equipa <a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX</a>",
+    "credit2": "Interface, linha expressiva e agentes de desenho de Pedro Amado · código escrito com Gemini e Claude"
+  },
+  "chooser": {
+    "title": "Escolha uma variante",
+    "a": "Seguimento ocular por webcam com o InkGaze.js — o protótipo principal.",
+    "b": "O rato faz de olhos: a mesma permanência e a mesma fuga, para testes rápidos.",
+    "c": "A cabeça aponta: uma tela de 360° num telemóvel em óculos Cardboard, em óculos WebXR ou numa pré-visualização.",
+    "open": "Abrir",
+    "docs": "Documentação",
+    "readme": "Leia-me",
+    "changelog": "Registo de alterações",
+    "prd": "Requisitos (PRD)",
+    "inkgaze": "Biblioteca InkGaze.js"
+  },
+  "hud": {
+    "line": {
+      "rigid": "Linha Rígida",
+      "dynamic": "Linha Dinâmica",
+      "fluid": "Linha Fluida"
+    },
+    "thickness": {
+      "thin": "Linha Fina",
+      "medium": "Linha Média",
+      "thick": "Linha Grossa"
+    },
+    "color": {
+      "black": "Cor Preta",
+      "red": "Cor Vermelha",
+      "blue": "Cor Azul",
+      "white": "Cor Branca"
+    },
+    "draw": {
+      "off": "Carregar para Desenhar",
+      "on": "Carregar para Pausar"
+    },
+    "grid": {
+      "off": "Modo Livre",
+      "always": "Modo Grelha (ligada)",
+      "feedback": "Modo Grelha (reativa)",
+      "hidden": "Modo Grelha (oculta)"
+    },
+    "undo": "Desfazer",
+    "options": "Opções",
+    "opt": {
+      "clear": "Limpar Desenho",
+      "save": "Guardar Desenho",
+      "open": "Abrir Desenho",
+      "config": "Configuração"
+    }
+  },
+  "modal": {
+    "clearTitle": "Limpar todo o desenho?",
+    "clearBody1": "Tudo o que está na tela será apagado.",
+    "clearBody2": "Ainda pode recuperá-lo com Desfazer.",
+    "clear": "Limpar",
+    "cancel": "Cancelar",
+    "openTitle": "Abrir um desenho guardado",
+    "openEmpty": "Ainda não há desenhos guardados neste navegador.",
+    "loadFile": "Carregar um ficheiro…",
+    "clickTap": "clique / toque"
+  },
+  "badge": {
+    "faceLost": "A câmara não vê o rosto",
+    "tracker": "Seguimento ocular: {state}"
+  },
+  "toast": {
+    "libMissing": "O InkGaze (lib/inkgaze.js) não foi carregado.",
+    "recentreHint": "O seguimento ocular sugere recentrar (um ponto): carregue em c, ou Opções → Configuração → Recentrar.",
+    "fileDwell": "Abrir um ficheiro exige um clique ou um toque (os navegadores só abrem a janela de ficheiros assim). Em alternativa, olhe para um desenho recente acima.",
+    "saving": "A guardar o desenho…",
+    "saved": "Guardados {png} e {json} (fica também uma cópia neste navegador).",
+    "saveFailed": "Não foi possível guardar: {error}",
+    "nothingOpened": "Nada foi aberto.",
+    "restored": "Desenho e definições recuperados ({date}).",
+    "calRestored": " Também a sua calibração do seguimento ocular: recomenda-se recentrar (c).",
+    "calNotLoaded": " (A calibração guardada não foi carregada: {reason}.)",
+    "calOtherCamera": "outra câmara",
+    "defaults": "Todas as definições voltaram às predefinições.",
+    "storageCleared": "Definições guardadas apagadas para {key} (as atuais mantêm-se até recarregar a página).",
+    "cleared": "Tela limpa (Desfazer recupera-a).",
+    "recentred": "Tela recentrada.",
+    "notSession": "Este ficheiro não é uma sessão do Inkwell.",
+    "badFile": "Este ficheiro não é uma sessão válida do Inkwell (JSON).",
+    "language": "Idioma: {name}",
+    "languageLoaded": "Ficheiro de idioma carregado: {name} ({count} textos).",
+    "languageBad": "Este ficheiro não é um ficheiro de idioma do Inkwell: {reason}"
+  },
+  "about": {
+    "title": "Sobre o Inkwell",
+    "html": [
+      "<p class=\"lead\">O <b>Inkwell</b> é o estúdio de desenho com o olhar do <b><a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX — O Desenho com vista à Re-conexão Social</a></b>, um projeto de investigação exploratória da Faculdade de Belas Artes da Universidade do Porto (FBAUP) financiado pela FCT (2023.11224.PEX). O SiX explora o desenho como expressão e re-conexão social para pessoas com <b>Síndrome de Locked-In</b> (LIS, ou síndrome de encarceramento) parcial a completa — para quem os olhos podem ser o único canal fiável — através do co-design com a Associação Portuguesa de Esclerose Lateral Amiotrófica (APELA).</p>",
+      "<h3>De onde vem este protótipo</h3>",
+      "<p>A linha começou como uma experiência ao estilo do EyeWriter e cresceu através do <i>GazeDraw</i> (uma malha de pontos ativados pelo olhar) e das versões WebXR 12–15 do <i>Gaze Draw</i> (tinta contínua, agentes de desenho autónomos, amplificação do olhar, um modo assistido por grelha, uma camada de comandos para assistentes) até ao <b>Inkwell 16</b>. Uma primeira avaliação com participantes sem incapacidade motora (2026) mostrou que, abaixo de um limiar de <i>correspondência</i> entre a intenção e o traço, desenhar com o olhar reduz-se a apontar — por isso a calibração e o ajuste a cada pessoa são condições prévias da expressão. O Inkwell 16 responde com um seguimento ocular calibrado por webcam, definições por utilizador e alternativas à permanência do olhar (a sacada de fuga, o piscar de olhos).</p>",
+      "<h3>Para que serve este protótipo web</h3>",
+      "<p>Uma bancada de testes rápida e aberta para o <b>design de interação</b> do desenho com o olhar. Uma aplicação, três variantes: <b>16a</b> seguimento ocular por webcam (a principal), <b>16b</b> cursor do rato (os mesmos comportamentos, para testes rápidos), <b>16c</b> Cardboard / óculos de RV com uma tela de 360° — para que as ideias possam ser experimentadas em qualquer lugar antes de passarem para o protótipo principal do projeto.</p>",
+      "<h3>O protótipo principal do SiX</h3>",
+      "<p>A aplicação SiX para os <b>HTC Vive Focus Vision</b> (Unity, com seguimento ocular nos óculos) é o protótipo principal do projeto: construída pela equipa liderada por <b>Eliana Penedos-Santiago</b> e desenvolvida por <b>Manuel Silva</b> (CITAR · Universidade Católica Portuguesa).</p>",
+      "<h3>InkGaze.js</h3>",
+      "<p>Um resultado adicional deste trabalho: o <b>InkGaze.js</b>, uma biblioteca de seguimento ocular por webcam, pronta a integrar, que afina a abordagem de bibliotecas para navegador como o WebGazer para o desenho só com o olhar — calibração de 5 ou 9 pontos com uma bolha que encolhe, compensação dos movimentos da cabeça, um modelo que continua a aprender com aquilo para que se olha, e eventos de piscar e de sacadas. O Inkwell 16a funciona com ela.</p>",
+      "<h3>Créditos</h3>",
+      "<p><b><a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX — O Desenho com vista à Re-conexão Social</a></b> (FBAUP · FCT 2023.11224.PEX). Este protótipo existe no âmbito — e por causa — do <a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">projeto SiX</a>. <b>Investigadora Responsável:</b> Eliana Penedos-Santiago (ID+ · FBAUP). <b>Equipa:</b> Andreia Pinto de Sousa, Bruno Giesteira, Cláudia Lima, Pedro Amado, Sílvia Simões, Viviane Peçaibes. <b>Consultores:</b> Filipe Gonçalves (APELA), Miguel Alves-Ferreira (CGPP-IBMC / i3S). <b>Colaboradores:</b> Lara Portelinha, Manuel Silva, Vasco Praça. <b>Parceiros:</b> APELA · ADITGAMES · i3S / IBMC · Fraunhofer AICOS.</p>",
+      "<dl class=\"credits\">",
+      "<dt>Conceito e design de interação</dt>",
+      "<dd>Eliana Penedos-Santiago, Andreia Pinto de Sousa, Manuel Silva e Pedro Amado (prototipagem de design do <a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX</a> — Tarefa 3, coordenada por Pedro Amado).</dd>",
+      "<dt>Design de interface, linha expressiva e agentes de desenho</dt>",
+      "<dd>Pedro Amado (FBAUP / i2ADS) — as linhas rígida, dinâmica e fluida; a espessura variável, os pingos e os salpicos; o modo de desenho com agentes (boids). Concebidos e desenvolvidos neste protótipo web desde maio de 2026.</dd>",
+      "<dt>Modo grelha (pontos)</dt>",
+      "<dd>Dos primeiros protótipos da equipa <a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX</a> e do trabalho de Andreia Pinto de Sousa e Eliana Penedos-Santiago com estudantes de pós-graduação.</dd>",
+      "<dt>Da aplicação <a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX</a> de RV</dt>",
+      "<dd>Definições e decisões de interação testadas por Manuel Silva na aplicação para HTC Vive Focus Vision (Unity) — por exemplo, o cursor escondido durante o desenho e a confirmação de Limpar.</dd>",
+      "<dt>Protótipo web</dt>",
+      "<dd>Dirigido por Pedro Amado; código escrito com modelos de IA — Google Gemini 2.5 Pro e 3.1 Pro (primeiras versões) e Anthropic Claude Opus 5.5 (todo o código do Inkwell 16 e do InkGaze.js).</dd>",
+      "<dt>InkGaze.js</dt>",
+      "<dd>Conceito e design de Pedro Amado; desenvolvimento de Claude Opus 5.5 (outubro de 2026).</dd>",
+      "<dt>Projeto</dt>",
+      "<dd><a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">six.fba.up.pt</a> · Inkwell {version}</dd>",
+      "</dl>"
+    ],
+    "translation": "Tradução: {translators}"
+  },
+  "help": {
+    "title": "Ajuda",
+    "videoSoon": "Tutorial em vídeo — em breve",
+    "html": [
+      "<h3>Primeiros passos</h3>",
+      "<ul>",
+      "<li><b>16a · seguimento ocular</b> — abrem primeiro as definições do InkGaze: carregue em <b>Start</b> e olhe para cada ponto até o círculo se fechar (5 pontos; 9 para o melhor ajuste). Uma calibração guardada só precisa de uma verificação rápida. Depois, a aplicação assume o controlo.</li>",
+      "<li><b>16b · cursor do rato</b> — a mesma aplicação e os mesmos comportamentos, comandados pelo ponteiro (sem câmara).</li>",
+      "<li><b>16c · cardboard</b> — num telemóvel dentro de óculos Cardboard (ou em óculos WebXR): aponta-se com a cabeça. Dê a volta: a tela tem 360°.</li>",
+      "</ul>",
+      "<h3>O primeiro ecrã e o ecrã de boas-vindas</h3>",
+      "<p>Olhe para cada um dos três pontos até ficar vermelho e rebentar (os pontos crescem um pouco enquanto olha). Depois, <b>começar</b> abre o estúdio; <b>Sobre</b>, <b>Ajuda</b> e <b>Configurações</b> estão em baixo, os idiomas em cima. Tudo funciona com o olhar (uma permanência de 0,8 s) ou com um clique.</p>",
+      "<h3>O menu (em baixo)</h3>",
+      "<ul>",
+      "<li><b>Linha</b> — <i>Rígida</i> (muito suavizada, largura constante), <i>Dinâmica</i> (equilibrada; devagar = grossa, depressa = fina), <i>Fluida</i> (a mais próxima do olhar, viva e expressiva; pingos e salpicos).</li>",
+      "<li><b>Espessura</b> — <i>Fina</i> (lápis), <i>Média</i> (marcador), <i>Grossa</i> (marcador largo): definidas em graus de ângulo visual (0,18°, 0,40°, 0,90°), para que cada uma seja um salto visual claro e fique dentro da visão central nítida.</li>",
+      "<li><b>Cor</b> — Preta, Vermelha, Azul, Branca.</li>",
+      "<li><b>Carregar para Desenhar / Carregar para Pausar</b> (ao centro) — o lápis em cima ou fora da mesa.</li>",
+      "<li><b>Grelha</b> — <i>Livre</i>, ou uma malha de pontos ativados pelo olhar: <i>ligada</i> (sempre visível), <i>reativa</i> (um ponto acende quando olha), <i>oculta</i>. Fixe um ponto para começar, o seguinte para traçar um segmento, o mesmo ponto outra vez (ou uma sacada de fuga) para parar.</li>",
+      "<li><b>Desfazer</b> — a última linha (pode repetir).</li>",
+      "<li><b>Opções</b> — <i>Limpar Desenho</i> (pede confirmação: um olhar mais longo e ininterrupto em <i>Limpar</i>), <i>Guardar Desenho</i> (uma imagem PNG + uma sessão JSON com as definições e a sua calibração), <i>Abrir Desenho</i> (os seus desenhos recentes, ou um ficheiro JSON com um clique), <i>Configuração</i> (incluindo o idioma).</li>",
+      "</ul>",
+      "<h3>Desenhar</h3>",
+      "<ol>",
+      "<li><b>Carregar para Desenhar.</b></li>",
+      "<li>Olhe para onde a linha deve começar e mantenha o olhar parado: o anel à volta do cursor enche-se e a linha começa (pode desligar esta permanência na Configuração: a linha começa logo que o olhar estabiliza).</li>",
+      "<li>Desenhe movendo os olhos. O agente (uma pequena caneta com peso) segue o seu olhar e deposita a tinta.</li>",
+      "<li>Para parar, faça um <b>olhar rápido e amplo para longe</b> (a <i>sacada de fuga</i>): a linha termina e o estúdio volta ao repouso. Opcional: manter o desenho ativo depois de uma fuga, parar com uma permanência, ou com um piscar longo (16a).</li>",
+      "</ol>",
+      "<h3>Agentes, amplificação, deslocamento</h3>",
+      "<p>Por omissão, desenha um agente. Acrescente, remova, torne aleatórios ou ajuste os agentes na Configuração (velocidade, mola, amortecimento, massa, agitação), ou escolha uma predefinição. A amplificação do olhar faz com que pequenos movimentos dos olhos cheguem mais longe; o deslocamento assistido (desligado por omissão) desloca uma tela maior quando chega à sua margem.</p>",
+      "<h3>RV (16c)</h3>",
+      "<p>Rode a cabeça: a tela envolve-o por completo. O menu espera um momento e depois desliza para ficar abaixo dos seus olhos. Olhe para baixo para o usar; toque duas vezes no ecrã para recentrar.</p>",
+      "<h3>Afinar o «toque de Midas»</h3>",
+      "<p>Em Configuração → Ativação: a permanência no menu (0,8 s), a permanência na tela, a tolerância de saída, a margem dos alvos (área de toque extra invisível), a velocidade de estabilização e o tamanho da fuga. Se as coisas disparam sozinhas, aumente a permanência; se parecem lentas, diminua-a.</p>",
+      "<h3>Teclado / comando (assistentes)</h3>",
+      "<p><kbd>q</kbd> desenhar sim/não · <kbd>w</kbd>/<kbd>s</kbd> espessura · <kbd>a</kbd>/<kbd>d</kbd> tipo de linha · <kbd>o</kbd>/<kbd>l</kbd> cor · <kbd>k</kbd>/<kbd>ç</kbd> desfazer/refazer · <kbd>e</kbd>×2 limpar · <kbd>g</kbd> grelha · <kbd>i</kbd>/<kbd>p</kbd> vista 3D sim/não · <kbd>r</kbd> recentrar a tela · <kbd>c</kbd> recentrar o seguimento ocular (16a) · <kbd>f</kbd> ecrã inteiro · <kbd>Esc</kbd> fechar / definições do seguimento ocular.</p>",
+      "<h3>Idiomas</h3>",
+      "<p>Estão incluídos o inglês e o português. Para acrescentar ou corrigir um idioma, copie <code>i18n/en.json</code>, traduza os textos e carregue-o em Configuração → Idioma (fica guardado neste navegador), ou acrescente-o à pasta <code>i18n</code> e ao <code>languages.json</code>.</p>",
+      "<h3>Privacidade</h3>",
+      "<p>A imagem da câmara nunca sai do seu dispositivo. As definições e os desenhos guardados ficam neste navegador, a não ser que guarde ficheiros.</p>"
+    ]
+  },
+  "orbit": {
+    "title": "Vista de análise 3D · experimental",
+    "keys": "órbita o/l inclinação · k/ç rotação · a/d rolamento · w/s zoom · p voltar"
+  },
+  "vr": {
+    "intro": "Coloque o telemóvel nuns óculos Cardboard (ou use uns óculos WebXR). A cabeça aponta: olhe para algo e espere — a permanência seleciona. Dê a volta: a tela está toda à sua volta.",
+    "start": "Começar (neste telemóvel)",
+    "enterXR": "Entrar em RV (óculos WebXR)",
+    "preview": "Pré-visualização (arraste para olhar)",
+    "sensorsDenied": "Os sensores de movimento não estão disponíveis ou não foram autorizados: arraste para olhar em volta (pré-visualização).",
+    "rotate": "Rode o telemóvel para a horizontal para a vista com dois olhos.",
+    "recentred": "Vista recentrada.",
+    "tapHint": "Toque duas vezes para recentrar · um toque seleciona aquilo para que aponta",
+    "xrFailed": "Não foi possível iniciar o WebXR: {reason}",
+    "webgl": "Este dispositivo não consegue mostrar a vista 3D (WebGL indisponível)."
+  },
+  "cfg": {
+    "title": "Configuração",
+    "close": "Fechar a configuração",
+    "sub": "{variant} · guardada neste navegador para esta variante",
+    "sections": {
+      "language": "Idioma",
+      "activation": "Ativação — permanência, fuga, piscar (o toque de Midas)",
+      "cursor": "Cursor (para onde olha)",
+      "line": "Linha",
+      "ink": "Comportamento da tinta",
+      "agents": "Agentes (boids)",
+      "amp": "Amplificação do olhar e deslocamento assistido",
+      "grid": "Modo grelha",
+      "vr": "RV — Cardboard / óculos",
+      "tracker": "Seguimento ocular (InkGaze)",
+      "data": "Definições"
+    },
+    "items": {
+      "menuDwellMs": {
+        "label": "Permanência no menu",
+        "help": "Olhe para um botão durante este tempo para o carregar (predefinição da investigação: 0,8 s)."
+      },
+      "confirmDwellMs": {
+        "label": "Permanência para confirmar Limpar",
+        "help": "Limpar exige uma permanência mais longa e sem interrupções; desviar o olhar cancela-a de imediato."
+      },
+      "graceMs": {
+        "label": "Tolerância de saída",
+        "help": "Um desvio do olhar mais curto do que isto não reinicia a permanência (recomenda-se 150–250 ms)."
+      },
+      "hitPad": {
+        "label": "Margem dos alvos",
+        "help": "Área de toque extra, invisível, à volta dos botões e dos pontos (recomenda-se ≥ +50 %); alvos vizinhos nunca se sobrepõem.",
+        "unit": "área"
+      },
+      "dwellStart": {
+        "label": "A permanência na tela inicia a linha",
+        "help": "Desligado: depois de Carregar para Desenhar, a linha começa logo que o olhar estabiliza na tela."
+      },
+      "canvasDwellMs": {
+        "label": "Permanência na tela"
+      },
+      "dwellStop": {
+        "label": "A permanência na tela para a linha",
+        "help": "Desligado por omissão: desenhar devagar pode ser lido como uma paragem. A sacada de fuga é a forma de parar."
+      },
+      "escapeStop": {
+        "label": "A sacada de fuga para a linha",
+        "help": "Um olhar rápido e amplo para longe levanta a caneta."
+      },
+      "escapePauses": {
+        "label": "… e desliga o modo de desenho",
+        "help": "Ligado: depois de uma fuga, Carregar para Desenhar outra vez para a linha seguinte. Desligado: o desenho continua ativo, e a linha seguinte começa com uma permanência na tela, depois de o olhar se afastar do ponto onde a fuga terminou."
+      },
+      "escapeAmplitude": {
+        "label": "Tamanho da fuga",
+        "help": "Até onde o olhar tem de saltar (fração da diagonal do ecrã, em 200 ms)."
+      },
+      "escapeDegS": {
+        "label": "Velocidade da cabeça na fuga",
+        "help": "Um movimento brusco da cabeça mais rápido do que isto levanta a caneta."
+      },
+      "blinkToggle": {
+        "label": "Um piscar longo inicia / para a linha",
+        "help": "Um piscar deliberado (≥ 0,4 s, definido nas definições do seguimento ocular) liga e desliga a caneta."
+      },
+      "settleDegS": {
+        "label": "Velocidade de estabilização",
+        "help": "O olhar tem de abrandar abaixo disto antes de contar uma permanência na tela ou na grelha."
+      },
+      "dwellRadiusDeg": {
+        "label": "Tolerância da permanência",
+        "help": "Quanto o olhar pode vaguear durante uma permanência na tela."
+      },
+      "cursorDrawing": {
+        "label": "Mostrar o cursor enquanto desenha",
+        "help": "Desligado por omissão, como na aplicação HTC Vive: um cursor visível convida os olhos a segui-lo e a derivar. A própria tinta mostra onde está a caneta (os marcadores dos agentes também se escondem)."
+      },
+      "cursorPaused": {
+        "label": "Mostrar o cursor em pausa",
+        "help": "Ligado por omissão: um círculo tracejado cinzento-claro mostra para onde olha quando o desenho está desligado, depois de uma fuga ou de uma paragem por permanência."
+      },
+      "lineMode": {
+        "label": "Tipo de linha"
+      },
+      "thickness": {
+        "label": "Espessura"
+      },
+      "color": {
+        "label": "Cor"
+      },
+      "ppd": {
+        "label": "Píxeis por grau",
+        "help": "Converte a espessura em graus em píxeis: ~40 num portátil a 55 cm, ~50 num monitor a 70 cm."
+      },
+      "lineParams.rigid.0": {
+        "label": "Rígida — corte mínimo",
+        "help": "Filtro 1€: mais baixo = mais suave em repouso (mais atraso)."
+      },
+      "lineParams.rigid.1": {
+        "label": "Rígida — resposta à velocidade (β)"
+      },
+      "lineParams.dynamic.0": {
+        "label": "Dinâmica — corte mínimo"
+      },
+      "lineParams.dynamic.1": {
+        "label": "Dinâmica — resposta à velocidade (β)"
+      },
+      "lineParams.fluid.0": {
+        "label": "Fluida — corte mínimo"
+      },
+      "lineParams.fluid.1": {
+        "label": "Fluida — resposta à velocidade (β)",
+        "help": "β mais alto = menos atraso quando o olhar se move depressa."
+      },
+      "cursorSmooth": {
+        "label": "Resposta do cursor",
+        "help": "1 = o cursor fica exatamente sobre o fluxo do olhar; menos = suavização extra do cursor."
+      },
+      "engorge": {
+        "label": "Acumulação quando parado",
+        "help": "Quase parada, a linha engrossa até este valor (Fluida / Dinâmica)."
+      },
+      "slowDegS": {
+        "label": "Mais larga a (devagar)"
+      },
+      "fastDegS": {
+        "label": "Mais fina a (depressa)"
+      },
+      "drips": {
+        "label": "Pingos (quando parado)"
+      },
+      "dripSpeed": {
+        "label": "Pingar abaixo da velocidade"
+      },
+      "dripInt": {
+        "label": "Intervalo entre pingos"
+      },
+      "splats": {
+        "label": "Salpicos (curvas bruscas)"
+      },
+      "splatThr": {
+        "label": "Limiar de salpico (|Δv|)"
+      },
+      "splatInt": {
+        "label": "Intervalo entre salpicos"
+      },
+      "gazeAmp": {
+        "label": "Amplificação do olhar",
+        "help": "Acima de 1×, um cursor-fantasma mais claro (a origem do desenho) chega mais longe do que o olhar; o cursor principal fica sobre o olhar."
+      },
+      "panEnabled": {
+        "label": "Deslocar a tela ao chegar à zona de conforto",
+        "help": "Uma tela maior desloca-se quando a mira chega à margem da zona (desligado por omissão)."
+      },
+      "comfortFrac": {
+        "label": "Zona de conforto"
+      },
+      "panRate": {
+        "label": "Velocidade do deslocamento"
+      },
+      "worldScale": {
+        "label": "Tamanho da tela (com deslocamento)"
+      },
+      "gridSpacingDeg": {
+        "label": "Espaçamento dos pontos"
+      },
+      "gridDotDeg": {
+        "label": "Tamanho dos pontos"
+      },
+      "gridPadDeg": {
+        "label": "Margem contra o tremor",
+        "help": "Tolerância extra à volta de cada ponto."
+      },
+      "stereo": {
+        "label": "Estéreo (dois olhos) em telemóveis",
+        "help": "Desligado: uma só vista em ecrã inteiro (pré-visualização para olhar em volta)."
+      },
+      "headGain": {
+        "label": "Sensibilidade da cabeça"
+      },
+      "ipd": {
+        "label": "Distância interpupilar (IPD)"
+      },
+      "distort": {
+        "label": "Distorção das lentes",
+        "help": "Correção em barril para lentes Cardboard (0 = nenhuma). A vista cabe sempre por inteiro: sem cortes."
+      },
+      "vrZoom": {
+        "label": "Zoom do campo de visão"
+      },
+      "followDelayMs": {
+        "label": "Atraso do menu ao seguir",
+        "help": "Depois de rodar a cabeça, o menu espera este tempo e depois desliza suavemente para baixo dos seus olhos."
+      },
+      "followMs": {
+        "label": "Duração do seguimento do menu"
+      },
+      "hudPitchDeg": {
+        "label": "Altura do menu"
+      },
+      "invertX": {
+        "label": "Inverter a mira da cabeça (esquerda / direita)"
+      },
+      "invertY": {
+        "label": "Inverter a mira da cabeça (cima / baixo)"
+      }
+    },
+    "language": {
+      "current": "Idioma da aplicação",
+      "load": "Carregar um ficheiro de idioma…",
+      "template": "Descarregar o idioma atual (modelo)",
+      "remove": "Remover o {name} carregado",
+      "help": "Para acrescentar ou corrigir um idioma: descarregue o modelo, traduza os textos (mantenha as chaves, os {marcadores} e as etiquetas HTML) e carregue-o aqui — fica guardado neste navegador. Ou acrescente o ficheiro à pasta i18n da aplicação e liste-o em languages.json. A janela do seguimento ocular (InkGaze) está em inglês."
+    },
+    "agents": {
+      "presets": "Predefinições (agentes + amplificação):",
+      "none": "Sem agentes: a caneta fica <b>diretamente</b> sobre o olhar (amplificado).",
+      "agent": "Agente {n}",
+      "randomise": "Tornar este agente aleatório",
+      "reset": "Repor o modelo",
+      "remove": "Remover este agente",
+      "add": "+ Acrescentar agente",
+      "randomiseAll": "Tornar todos aleatórios",
+      "template": "Modelo para agentes novos, aleatórios e repostos:",
+      "templatePrefix": "modelo · {label}",
+      "speed": "velocidade",
+      "spring": "mola",
+      "damp": "amortecimento",
+      "mass": "massa",
+      "jitter": "agitação"
+    },
+    "presets": {
+      "direct": "Direto (sem agente)",
+      "assisted": "Assistido (1 agente)",
+      "amplified": "Direto amplificado",
+      "tremor": "Estável (tremor)",
+      "limited": "Movimento limitado",
+      "springy": "Elástico",
+      "calli": "Caligráfico",
+      "chorus": "Coro (3 agentes)",
+      "swarm": "Enxame (5 agentes)"
+    },
+    "tracker": {
+      "notRunning": "O seguimento ocular não está a funcionar.",
+      "calibrated": "Calibrado · {points} pontos · {model}",
+      "notCalibrated": "Não calibrado",
+      "fps": " · câmara a {fps} fps",
+      "hz": " · {hz} Hz para a aplicação",
+      "settings": "Definições do seguimento ocular",
+      "recentre": "Recentrar (1 ponto)",
+      "cal5": "Calibrar · 5 pontos",
+      "cal9": "Calibrar · 9 pontos",
+      "help": "A suavização, a influência da cabeça, a frequência de dados, a duração do piscar longo e a câmara estão nas definições do seguimento ocular (Esc)."
+    },
+    "data": {
+      "reset": "Repor todas as predefinições",
+      "clearSaved": "Apagar as definições guardadas",
+      "footer": "Inkwell {version} · {key} · cada alteração é guardada de imediato.",
+      "about": "Sobre",
+      "help": "Ajuda",
+      "start": "Ecrã inicial"
+    }
+  }
+}

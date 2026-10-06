@@ -1,0 +1,13 @@
+{
+  "name": "Inkwell 16 — gaze drawing studio",
+  "short_name": "Inkwell",
+  "description": "SiX gaze drawing studio: webcam eye tracker (InkGaze.js), mouse and Cardboard / WebXR variants; dwell menu, escape-saccade stop, autonomous ink agents, 360° VR canvas.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#faf9f7",
+  "theme_color": "#faf9f7",
+  "categories": ["art", "accessibility"],
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

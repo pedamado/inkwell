@@ -1,0 +1,306 @@
+/*!
+ * InkGaze v2.1.0 — inkgaze.css (pairs with inkgaze.js). SiX research project (FCT 2023.11224.PEX), https://six.fba.up.pt/
+ * Concept and design: Pedro Amado (FBAUP / i2ADS). Development: Claude Opus 5.5 (Anthropic), October 2026.
+ *
+ * Theming: every colour / size below is a custom property (--ig-*). Load a host stylesheet AFTER this file and
+ * redefine any of them, on :root or on a component class (.ig-cal, .ig-settings, .ig-debug), e.g.
+ *     :root { --ig-bg: #fffbe6; --ig-dot: rgba(0, 0, 0, .55); --ig-dot-size: 56px; --ig-accent: #0b5cad; }
+ * Isolation: everything is namespaced (ig- classes, --ig- properties, ig- keyframes); no global element rules. The
+ * library's own nodes revert host styles first (all: revert), then get the rules below. Stacking: the calibration
+ * overlay and the settings dialog are <dialog>s in the browser's TOP LAYER (above any host z-index); the debug
+ * drawer, its button and the gaze markers use options.zIndex (+1..+3) inline.
+ */
+
+:root {
+  --ig-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --ig-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* calibration overlay (the original look: white page, 48 px 40 %-black dots, 50 %-grey outline bubble) */
+  --ig-bg: #ffffff;
+  --ig-text: #666666;
+  --ig-dot: rgba(0, 0, 0, 0.4);
+  --ig-dot-size: 48px;
+  --ig-bubble: rgba(128, 128, 128, 0.5);
+  --ig-bubble-hold: rgba(128, 128, 128, 0.2);   /* paused: blink, eye moving, face lost */
+  --ig-bubble-width: 2px;
+  --ig-bubble-size: 144px;                       /* outer diameter when a dot appears; it closes onto the dot */
+  --ig-pop-scale: 2.5;
+  --ig-hud-text: #777777;                        /* calibration HUD (debug drawer open) */
+  --ig-hud-bg: rgba(0, 0, 0, 0.035);
+
+  /* settings dialog */
+  --ig-accent: #333333;
+  --ig-accent-text: #ffffff;
+  --ig-focus: #2563eb;
+  --ig-panel-bg: #ffffff;
+  --ig-panel-text: #222222;
+  --ig-panel-muted: #666666;
+  --ig-panel-border: #e1e1e1;
+  --ig-panel-field: #f5f5f5;
+  --ig-panel-radius: 12px;
+  --ig-panel-shadow: 0 12px 48px rgba(0, 0, 0, 0.28);
+  --ig-panel-scheme: light;
+  --ig-backdrop: rgba(0, 0, 0, 0.35);
+  --ig-preview-bg: #1b1b1b;
+  --ig-ok: #1a7f37;
+  --ig-warn: #9a6700;
+  --ig-error: #b42318;
+
+  /* debug drawer (v1 look: green on near-black) */
+  --ig-debug-bg: rgba(15, 15, 15, 0.95);
+  --ig-debug-text: #7dff7d;
+  --ig-debug-muted: #9a9a9a;
+  --ig-debug-line: #2a2a2a;
+  --ig-debug-width: 380px;
+  --ig-debug-button-bg: #333333;
+  --ig-debug-button-text: #ffffff;
+  --ig-debug-button-active: #1f7a1f;
+  --ig-marker-raw: #e11d48;                      /* on-screen gaze markers: ring = raw */
+  --ig-marker-smooth: #2563eb;                   /* dot = smoothed */
+  --ig-marker-size: 16px;
+}
+
+/* ---------------------------------------------------------------------------------------------- isolation */
+/* host CSS cannot restyle the library's nodes through element selectors (button {…}, p {…}, …) */
+.ig-ui,
+.ig-ui :where(div, span, p, h2, h3, header, footer, section, aside, details, summary, label, button, input, select,
+  option, output, small, strong, table, thead, tbody, tr, th, td, dl, dt, dd, canvas, pre, fieldset, legend, textarea, a) {
+  all: revert;
+}
+.ig-ui, .ig-ui * { box-sizing: border-box; }
+.ig-ui[hidden], .ig-ui [hidden] { display: none !important; }
+dialog.ig-ui:not([open]) { display: none; }      /* also for browsers without <dialog> (fallback class ig-nodialog) */
+.ig-ui :focus-visible { outline: 2px solid var(--ig-focus); outline-offset: 2px; }
+.ig-ui.ig-cal-hidden { display: none !important; }   /* debug drawer / button during a calibration */
+
+/* ---------------------------------------------------------------------------------------------- calibration overlay */
+.ig-cal {
+  position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none;
+  margin: 0; padding: 0; border: 0; overflow: hidden; outline: none;
+  background: var(--ig-bg); color: var(--ig-text); color-scheme: light;
+  font-family: var(--ig-font); font-size: 16px; line-height: 1.4; text-align: center;
+  user-select: none; -webkit-user-select: none; touch-action: none;
+}
+.ig-cal[open] { animation: ig-fade-in 0.25s ease-out; }
+.ig-cal::backdrop { background: transparent; }
+.ig-cal.ig-idle, .ig-cal.ig-idle * { cursor: none; }
+
+.ig-cal-msg {
+  position: absolute; left: 50%; top: max(16px, 3vh); transform: translateX(-50%);
+  width: min(640px, 64vw); text-align: center; pointer-events: none;
+}
+.ig-cal-title { font-size: 20px; line-height: 1.35; color: var(--ig-text); }
+.ig-cal-detail { margin-top: 4px; font-size: 15px; line-height: 1.4; color: var(--ig-text); opacity: 0.8; }
+.ig-cal-alert { margin-top: 10px; font-size: 16px; line-height: 1.4; color: var(--ig-error); }
+.ig-cal-cancel {
+  display: inline-block; margin: 14px 0 0; padding: 6px 14px; pointer-events: auto; cursor: pointer;
+  font: 13px/1.2 var(--ig-font); color: var(--ig-text); background: transparent;
+  border: 1px solid currentColor; border-radius: 999px; opacity: 0.6;
+}
+.ig-cal-cancel:hover { opacity: 1; }
+.ig-cal.ig-idle .ig-cal-cancel { visibility: hidden; }   /* appears when the pointer moves (gaze users never need it) */
+
+.ig-cal-target { position: absolute; left: 0; top: 0; width: 0; height: 0; will-change: transform; }
+.ig-cal-dot {
+  position: absolute; left: 0; top: 0; width: var(--ig-dot-size); height: var(--ig-dot-size);
+  border-radius: 50%; background: var(--ig-dot); transform: translate(-50%, -50%);
+}
+.ig-cal-bubble {
+  position: absolute; left: 0; top: 0; width: var(--ig-bubble-size); height: var(--ig-bubble-size);
+  border: var(--ig-bubble-width) solid var(--ig-bubble); border-radius: 50%; background: transparent;
+  transform: translate(-50%, -50%); transition: border-color 0.2s ease; pointer-events: none;
+}
+.ig-cal-target.ig-hold .ig-cal-bubble { border-color: var(--ig-bubble-hold); }
+.ig-cal-target.ig-pop .ig-cal-bubble { opacity: 0; }
+.ig-cal-target.ig-pop .ig-cal-dot { animation: ig-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+.ig-cal-hud {
+  position: absolute; top: 50%; right: 12px; left: auto; transform: translateY(-50%);
+  margin: 0; padding: 8px 10px; max-width: 44vw; overflow: hidden; white-space: pre; text-align: left;
+  font: 11px/1.5 var(--ig-mono); color: var(--ig-hud-text); background: var(--ig-hud-bg);
+  border-radius: 6px; pointer-events: none;
+}
+.ig-cal-hud.ig-left { left: 12px; right: auto; }
+
+/* ---------------------------------------------------------------------------------------------- settings dialog */
+.ig-settings {
+  width: min(620px, calc(100vw - 24px)); max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px);
+  margin: auto; padding: 0; overflow: auto; overscroll-behavior: contain;
+  border: 1px solid var(--ig-panel-border); border-radius: var(--ig-panel-radius);
+  background: var(--ig-panel-bg); color: var(--ig-panel-text); box-shadow: var(--ig-panel-shadow);
+  color-scheme: var(--ig-panel-scheme);
+  font-family: var(--ig-font); font-size: 15px; line-height: 1.45; text-align: left;
+}
+.ig-settings[open] { animation: ig-rise 0.2s ease-out; }
+.ig-settings::backdrop { background: var(--ig-backdrop); }
+.ig-ui.ig-nodialog { position: fixed; inset: 0; }                 /* no <dialog> support: z-index set inline */
+.ig-settings.ig-nodialog { height: fit-content; }
+
+.ig-s-head {
+  position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 12px;
+  padding: 12px 12px 10px 20px; background: var(--ig-panel-bg); border-bottom: 1px solid var(--ig-panel-border);
+}
+.ig-s-title { flex: 1; margin: 0; font-size: 18px; font-weight: 650; line-height: 1.3; color: var(--ig-panel-text); }
+.ig-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 40px; height: 40px; margin: 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  background: transparent; color: var(--ig-panel-muted); font: 26px/1 var(--ig-font);
+}
+.ig-icon-btn:hover { background: var(--ig-panel-field); color: var(--ig-panel-text); }
+.ig-s-body { padding: 12px 20px 16px; }
+
+.ig-status { position: relative; margin: 0 0 4px; padding-left: 18px; font-weight: 600; }
+.ig-status::before {
+  content: ""; position: absolute; left: 2px; top: 0.45em; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--ig-panel-muted);
+}
+.ig-status[data-kind="ok"]::before { background: var(--ig-ok); }
+.ig-status[data-kind="busy"]::before { background: var(--ig-focus); animation: ig-pulse 0.9s ease-in-out infinite alternate; }
+.ig-status[data-kind="warn"]::before { background: var(--ig-warn); }
+.ig-status[data-kind="error"] { color: var(--ig-error); }
+.ig-status[data-kind="error"]::before { background: var(--ig-error); }
+.ig-note, .ig-qual { margin: 4px 0; font-size: 13.5px; line-height: 1.4; color: var(--ig-panel-muted); }
+.ig-qual { color: var(--ig-panel-text); }
+.ig-note[data-kind="ok"] { color: var(--ig-ok); }
+.ig-note[data-kind="warn"] { color: var(--ig-warn); }
+.ig-note[data-kind="error"] { color: var(--ig-error); }
+.ig-intro { margin: 8px 0 14px; }
+
+.ig-preview-col { max-width: 360px; margin: 0 auto 14px; }
+.ig-preview-wrap { position: relative; overflow: hidden; border-radius: 10px; background: var(--ig-preview-bg); }
+.ig-preview { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+.ig-preview-msg {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  padding: 12px; color: #e6e6e6; font-size: 14px; text-align: center;
+}
+.ig-preview-info { min-height: 1.4em; margin: 6px 0 0; font-size: 13px; color: var(--ig-panel-muted); text-align: center; }
+
+.ig-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; margin: 4px 0 10px; }
+.ig-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; margin: 0; }
+.ig-field > label, .ig-reach > legend { font-size: 14px; font-weight: 600; color: var(--ig-panel-text); }
+.ig-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ig-row > .ig-input { flex: 1; min-width: 0; }
+.ig-row.ig-wrap { flex-wrap: wrap; margin: 12px 0 4px; }
+.ig-input {
+  width: 100%; min-height: 40px; margin: 0; padding: 8px 10px;
+  font: inherit; font-size: 16px; line-height: 1.3; color: var(--ig-panel-text);
+  background: var(--ig-panel-field); border: 1px solid var(--ig-panel-border); border-radius: 8px;
+}
+.ig-help { display: block; font-size: 12.5px; line-height: 1.4; color: var(--ig-panel-muted); }
+.ig-warn-text { color: var(--ig-warn); }
+.ig-field.ig-wide { grid-column: 1 / -1; }
+.ig-rate-now { font-variant-numeric: tabular-nums; }
+.ig-range:disabled { opacity: 0.45; }
+.ig-reach { grid-column: 1 / -1; margin: 0; padding: 8px 12px 10px; border: 1px solid var(--ig-panel-border); border-radius: 10px; }
+.ig-reach > legend { padding: 0 4px; }
+.ig-axis { width: 1.4em; flex: none; font-weight: 600; }
+.ig-range { flex: 1; min-width: 0; height: 28px; margin: 0; accent-color: var(--ig-accent); }
+.ig-out { min-width: 3.6em; text-align: right; font-size: 14px; font-variant-numeric: tabular-nums; }
+.ig-field-check { margin: 2px 0; }
+.ig-check { display: flex; align-items: center; gap: 10px; min-height: 36px; cursor: pointer; font-size: 14.5px; font-weight: 400; }
+.ig-check input { flex: none; width: 18px; height: 18px; margin: 0; accent-color: var(--ig-accent); }
+.ig-field-check .ig-help { margin-left: 28px; }
+
+.ig-adv { margin: 10px 0 0; padding-top: 2px; border-top: 1px solid var(--ig-panel-border); }
+.ig-adv > summary { min-height: 44px; padding: 11px 0; cursor: pointer; font-weight: 600; }
+.ig-adv[open] > summary { margin-bottom: 4px; }
+
+.ig-s-actions {
+  position: sticky; bottom: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 12px 20px 10px; background: var(--ig-panel-bg); border-top: 1px solid var(--ig-panel-border);
+}
+.ig-s-foot { flex-basis: 100%; margin: 2px 0 0; font-size: 11.5px; color: var(--ig-panel-muted); }
+.ig-btn {
+  min-height: 44px; margin: 0; padding: 10px 16px; cursor: pointer;
+  font: inherit; font-size: 15px; font-weight: 600; line-height: 1.2;
+  color: var(--ig-panel-text); background: var(--ig-panel-field);
+  border: 1px solid var(--ig-panel-border); border-radius: 8px;
+}
+.ig-btn:hover:not(:disabled) { border-color: var(--ig-panel-muted); }
+.ig-btn.ig-primary { color: var(--ig-accent-text); background: var(--ig-accent); border-color: var(--ig-accent); }
+.ig-btn.ig-ghost { margin-left: auto; background: transparent; }
+.ig-btn.ig-small { min-height: 36px; padding: 6px 12px; font-size: 13.5px; font-weight: 500; flex: none; }
+.ig-btn.ig-armed { color: #ffffff; background: var(--ig-error); border-color: var(--ig-error); }
+.ig-btn:disabled { opacity: 0.45; cursor: default; }
+
+/* ---------------------------------------------------------------------------------------------- debug drawer */
+.ig-debug-toggle {
+  position: fixed; right: 16px; bottom: 16px; display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; margin: 0; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  color: var(--ig-debug-button-text); background: var(--ig-debug-button-bg);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3); opacity: 0.85;
+}
+.ig-debug-toggle:hover, .ig-debug-toggle.ig-active { opacity: 1; }
+.ig-debug-toggle.ig-active { background: var(--ig-debug-button-active); }
+.ig-debug-toggle svg { display: block; width: 22px; height: 22px; }
+
+.ig-debug {
+  position: fixed; top: 0; right: 0; bottom: 0; width: min(var(--ig-debug-width), 100vw);
+  margin: 0; padding: 0 0 76px; overflow-y: auto; overscroll-behavior: contain; text-align: left;
+  color: var(--ig-debug-text); background: var(--ig-debug-bg); color-scheme: dark;
+  font: 11px/1.45 var(--ig-mono); box-shadow: -4px 0 24px rgba(0, 0, 0, 0.5);
+  transform: translateX(100%); visibility: hidden;
+  transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), visibility 0s linear 0.25s;
+}
+.ig-debug.ig-open { transform: none; visibility: visible; transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), visibility 0s; }
+.ig-d-head {
+  position: sticky; top: 0; z-index: 1; display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px 8px 12px; color: #ffffff; background: #111111; border-bottom: 1px solid #333333; font-size: 12px;
+}
+.ig-d-head strong { flex: 1; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.ig-d-ver { color: var(--ig-debug-muted); }
+.ig-d-sec { padding: 6px 12px 8px; border-bottom: 1px solid var(--ig-debug-line); }
+.ig-d-sec h3 { margin: 4px 0 6px; font: 700 10.5px/1.3 var(--ig-mono); color: #ffffff; text-transform: uppercase; letter-spacing: 0.07em; }
+.ig-kv { display: grid; grid-template-columns: minmax(0, 46%) minmax(0, 1fr); gap: 1px 10px; margin: 0; }
+.ig-kv dt { margin: 0; color: var(--ig-debug-muted); }
+.ig-kv dd { margin: 0; color: var(--ig-debug-text); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.ig-d-table { width: 100%; border-collapse: collapse; font: inherit; color: var(--ig-debug-text); }
+.ig-d-table th { padding: 2px 4px; font-weight: 400; text-align: right; color: var(--ig-debug-muted); border-bottom: 1px solid #333333; }
+.ig-d-table td { padding: 1px 4px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; border-bottom: 1px solid #222222; }
+.ig-d-table th:nth-child(2), .ig-d-table td:nth-child(2) { text-align: left; }
+.ig-d-note { margin: 4px 0; color: var(--ig-debug-muted); }
+.ig-d-preview { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000000; border-radius: 4px; }
+.ig-d-tools { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.ig-dbtn {
+  min-height: 30px; margin: 0; padding: 5px 9px; cursor: pointer;
+  font: inherit; font-size: 11px; color: #ffffff; background: #2a2a2a; border: 1px solid #444444; border-radius: 4px;
+}
+.ig-dbtn:hover:not(:disabled) { background: #383838; }
+.ig-dbtn:disabled { opacity: 0.45; cursor: default; }
+.ig-d-x { padding: 2px 10px; font-size: 18px; line-height: 1; }
+.ig-d-check { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; color: var(--ig-debug-text); cursor: pointer; }
+.ig-offscreen { position: fixed; left: -10000px; top: 0; width: 1px; height: 1px; opacity: 0; }
+
+.ig-marker {
+  position: fixed; left: 0; top: 0; width: var(--ig-marker-size); height: var(--ig-marker-size);
+  margin: calc(var(--ig-marker-size) / -2) 0 0 calc(var(--ig-marker-size) / -2);
+  border-radius: 50%; pointer-events: none; will-change: transform;
+}
+.ig-marker-raw { border: 2px solid var(--ig-marker-raw); }
+.ig-marker-smooth { background: var(--ig-marker-smooth); opacity: 0.7; }
+
+/* ---------------------------------------------------------------------------------------------- motion + small screens */
+@keyframes ig-pop { from { transform: translate(-50%, -50%) scale(1); opacity: 1; } to { transform: translate(-50%, -50%) scale(var(--ig-pop-scale)); opacity: 0; } }
+@keyframes ig-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes ig-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ig-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes ig-pulse { from { opacity: 1; } to { opacity: 0.3; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ig-cal-target.ig-pop .ig-cal-dot { animation: ig-fade-out 0.3s ease-out forwards; }   /* fade instead of the scale pop */
+  .ig-cal[open], .ig-settings[open], .ig-status[data-kind="busy"]::before { animation: none; }
+  .ig-cal-bubble { transition: none; }   /* the shrinking bubble stays: it is progress feedback, not decoration */
+  .ig-debug, .ig-debug.ig-open { transition: none; }
+}
+
+@media (max-width: 560px) {
+  .ig-grid { grid-template-columns: minmax(0, 1fr); }
+  .ig-s-head { padding: 8px 8px 8px 14px; }
+  .ig-s-body { padding: 10px 14px 14px; }
+  .ig-s-actions { padding: 10px 14px; }
+  .ig-s-actions .ig-btn { flex: 1 1 auto; }
+  .ig-btn.ig-ghost { margin-left: 0; }
+  .ig-cal-title { font-size: 18px; }
+  .ig-cal-msg { width: min(640px, 80vw); }
+}

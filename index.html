@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Inkwell 16</title>
+    <meta name="description" content="Inkwell 16 — the SiX gaze drawing studio in three variants: webcam eye tracker (InkGaze.js), mouse cursor, and Cardboard / WebXR with a 360° canvas.">
+<!--
+  Inkwell 16 — a prototype of the SiX research project «Drawing for Social Re-connectivity» (FBAUP · FCT 2023.11224.PEX),
+  PI Eliana Penedos-Santiago and the SiX team · https://six.fba.up.pt/
+  Interface, expressive line and drawing agents: Pedro Amado (FBAUP / i2ADS). Code written with Google Gemini and
+  Anthropic Claude (Inkwell 16: Claude Opus 5.5, October 2026). Full credits: README.md.
+-->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/inkwell.css?v=16.1.0">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#faf9f7">
+    <style>
+        html, body { overflow: auto; height: auto; min-height: 100%; }
+        body { touch-action: auto; -webkit-user-select: auto; user-select: auto; }
+        .chooser { max-width: 1040px; margin: 0 auto; padding: 72px 16px 56px; display: flex; flex-direction: column; align-items: center; }
+        .chooser .logo { font-size: clamp(64px, 12vw, 150px); }
+        .chooser h2 { font-family: var(--mono); font-size: 15px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-label); margin: 52px 0 18px; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; width: 100%; }
+        .card { display: flex; flex-direction: column; gap: 12px; padding: 26px 24px 22px; border-radius: 26px; background: var(--surface-button); border: 1px solid var(--hairline); box-shadow: var(--shadow-rest); color: var(--ink); text-decoration: none; transition: box-shadow 0.15s, transform 0.15s; }
+        .card:hover, .card:focus-visible { box-shadow: var(--shadow-panel); transform: translateY(-2px); outline: none; }
+        .card:focus-visible { outline: 3px solid var(--red); outline-offset: 3px; }
+        .card .tag { font-family: var(--mono); font-weight: 700; font-size: 13px; color: var(--red); letter-spacing: 0.08em; }
+        .card .name { font-family: var(--mono); font-weight: 700; font-size: 22px; }
+        .card svg { width: 40px; height: 40px; }
+        .card p { margin: 0; color: var(--ink-label); font-size: 16px; flex: 1; }
+        .card .go { font-family: var(--mono); font-weight: 700; font-size: 14px; color: var(--ink); }
+        .card.main { border-color: var(--ink); }
+        .docs { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .docs a { font-family: var(--mono); font-size: 14px; padding: 10px 16px; border-radius: 999px; background: var(--bg-panel); color: var(--ink); text-decoration: none; }
+        .docs a:hover { background: var(--red-soft); }
+        .chooser footer { margin-top: 56px; font-size: 13px; color: var(--ink-label); text-align: center; max-width: 60em; }
+        .chooser .langs { position: fixed; }
+    </style>
+</head>
+<body>
+    <div class="langs" id="langs" role="group" aria-label="Language"></div>
+    <main class="chooser">
+        <h1 class="logo">inkwell</h1>
+        <p class="kicker">SiX · Inkwell 16.1.0</p>
+        <h2 data-i18n="chooser.title">Choose a variant</h2>
+        <div class="cards">
+            <a class="card main" href="inkwell-16a-eyetracker.html">
+                <span class="tag">16a</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg>
+                <span class="name" data-i18n="variant.a">eye tracker</span>
+                <p data-i18n="chooser.a">Webcam eye tracking with InkGaze.js — the main prototype.</p>
+                <span class="go"><span data-i18n="chooser.open">Open</span> →</span>
+            </a>
+            <a class="card" href="inkwell-16b-mouse-cursor.html">
+                <span class="tag">16b</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="3" width="11" height="18" rx="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 6.5v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                <span class="name" data-i18n="variant.b">mouse cursor</span>
+                <p data-i18n="chooser.b">The mouse plays the eyes: the same dwell and escape, for quick tests.</p>
+                <span class="go"><span data-i18n="chooser.open">Open</span> →</span>
+            </a>
+            <a class="card" href="inkwell-16c-cardboard.html">
+                <span class="tag">16c</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5c0-1.4 1.1-2.5 2.5-2.5h13c1.4 0 2.5 1.1 2.5 2.5v6c0 1.4-1.1 2.5-2.5 2.5h-3.2l-2-2.4a1.7 1.7 0 0 0-2.6 0L8.7 17H5.5A2.5 2.5 0 0 1 3 14.5z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="11.3" r="1.8" fill="currentColor"/><circle cx="16" cy="11.3" r="1.8" fill="currentColor"/></svg>
+                <span class="name" data-i18n="variant.c">cardboard</span>
+                <p data-i18n="chooser.c">Your head aims: a 360° canvas on a phone in a Cardboard viewer, in a WebXR headset, or in a preview.</p>
+                <span class="go"><span data-i18n="chooser.open">Open</span> →</span>
+            </a>
+        </div>
+        <h2 data-i18n="chooser.docs">Documentation</h2>
+        <nav class="docs">
+            <a href="README.md" data-i18n="chooser.readme">Read me</a>
+            <a href="CHANGELOG.md" data-i18n="chooser.changelog">Changelog</a>
+            <a href="Inkwell%2016%20%E2%80%94%20Product%20Requirements%20Document%20(PRD).md" data-i18n="chooser.prd">Requirements (PRD)</a>
+            <a href="lib/inkgaze.js" data-i18n="chooser.inkgaze">InkGaze.js library</a>
+        </nav>
+        <footer>
+            <p data-i18n-html="splash.credit1">A prototype of the <a href="https://six.fba.up.pt/" target="_blank" rel="noopener">SiX research project</a> · PI Eliana Penedos and the <a href="https://six.fba.up.pt/" target="_blank" rel="noopener">SiX</a> team</p>
+            <p data-i18n-html="splash.credit2">Interface, expressive line and drawing agents by Pedro Amado · code written with Gemini and Claude</p>
+            <p lang="en">This work is financed by national funds through the Portuguese funding agency, FCT — Fundação para a Ciência e a Tecnologia, within the project «2023.11224.PEX» [DOI 10.54499/2023.11224.PEX].</p>
+        </footer>
+    </main>
+    <script type="module">
+        import { initI18n, languages, lang, setLanguage, applyDom } from './js/i18n.js?v=16.1.0';
+        const box = document.getElementById('langs');
+        function chips() {
+            box.textContent = '';
+            for (const l of languages()) {
+                const b = document.createElement('button');
+                b.type = 'button'; b.className = 'lang-chip' + (l.code === lang() ? ' on' : ''); b.lang = l.code; b.textContent = l.nativeName;
+                b.setAttribute('aria-pressed', l.code === lang() ? 'true' : 'false');
+                b.addEventListener('click', () => setLanguage(l.code).then(chips));
+                box.append(b);
+            }
+        }
+        initI18n().then(() => { applyDom(); chips(); }).catch(() => { /* the English page stays */ });
+    </script>
+</body>
+</html>
