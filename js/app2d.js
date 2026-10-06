@@ -1,9 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// INKWELL 16 — the 2D app: 16a (InkGaze webcam eye tracker) and 16b (mouse cursor)
-//   Flow     16a: InkGaze takes over (its settings: Start / Resume → calibration or a saved one) · 16b: Start
+// INKWELL 17 — the 2D app: 17a (InkGaze webcam eye tracker), 17b (mouse cursor) and 17d (hand gestures, webcam)
+//   Flow     17a: InkGaze takes over (its settings: Start / Resume → calibration or a saved one) · 17b: Start ·
+//            17d: Start the camera → the hand is found (→ calibrate the reach, the first time) → Continue
 //            → three dots (look until each pops) → splash (play · About · Help · Configurations) → the studio
-//   Input    InkGaze's data stream. 16b runs InkGaze's MOUSE source: the pointer becomes the "gaze" with the same
+//   Input    InkGaze's data stream. 17b runs InkGaze's MOUSE source: the pointer becomes the "gaze" with the same
 //            states, saccades and escape saccades, so both variants share every interaction behaviour.
+//            17d (hands.js): the index fingertip is the cursor while a hand POINTS (a fist or an open hand never
+//            presses or inks); finger poses arm Draw mode and set the thickness, the thumb calls 1–5 random agents,
+//            a fist rests, an open-hand wave opens Clear Drawing, a finger tap clicks. Dwells work as with the eyes.
 //   Studio   #paper (the surface canvas itself, panned with CSS) · #overlay (grid, agents, menu, reticle, on top of
 //            everything, pointer-events: none) · #screens (DOM screens) · the Configuration layer
 // ═══════════════════════════════════════════════════════════════════════════
@@ -13,12 +17,14 @@ import {
 import { Surface } from './surface.js';
 import { Engine } from './engine.js';
 import * as HUD from './hud.js';
-import { GazeDom, toast, showGate, showIntro, showSplash, showAbout, showHelp, openConfig, agentsEditor, variantTitle } from './ui.js';
+import { GazeDom, toast, showGate, showIntro, showSplash, showAbout, showHelp, openConfig, agentsEditor, variantTitle, showReach } from './ui.js';
 import { t, has, onLanguage, setLanguage, langMeta } from './i18n.js';
 import { saveSession, recentSessions, pickSessionFile, parseSession, applySession } from './sessions.js';
 
+const THICK_BY_N = { 1: 'thin', 2: 'medium', 3: 'thick' };   // 17d: fingers pointing → line thickness
+
 export function runApp2D(variant) {
-  const isA = variant.id === 'a';
+  const isA = variant.id === 'a', isD = variant.id === 'd';
   const cfg = loadSettings(variant);
   if (Array.isArray(cfg.agents)) cfg.boidCount = cfg.agents.length;
   const paperHost = document.getElementById('paper'), overlay = document.getElementById('overlay'), root = document.getElementById('screens');
@@ -31,8 +37,11 @@ export function runApp2D(variant) {
     trackerState: '', lost: false,
     raw: null, gaze: null, degS: 0, state: 'lost', blinkMs: 0, holdT: 0, held: null,
     ghost: { x: 0, y: 0 }, pan: { x: 0, y: 0 }, panKey: '', space: false, drag: false,
-    cfgUI: null, page: null, orbit: null, lastFrame: performance.now(), lastClearTap: -1e9, recentreHinted: false,
+    cfgUI: null, page: null, orbit: null, reach: null, lastFrame: performance.now(), lastClearTap: -1e9, recentreHinted: false,
   };
+  // 17d: the hand tracker (hands.js, loaded on Start) and what the app keeps of it
+  let hands = null, HM = null, camEl = null;
+  const HS = { status: 'idle', reason: '', present: false, pointing: false, thumb: false, chip: null, seenT: 0 };
   document.body.classList.add('v-' + variant.id);
 
   // ---------------------------------------------------------------------------------------------- canvases + surface
@@ -88,6 +97,7 @@ export function runApp2D(variant) {
     engine.applyLineMode(); engine.ppd = cfg.ppd;
     if (boids && boids.length) { cfg.boidCount = boids.length; engine.spawnBoids(boids); } else engine.spawnBoids(Array.isArray(cfg.agents) && cfg.agents.length === cfg.boidCount ? cfg.agents : null);
     agentsToCfg();
+    if (isD) HS.thumb = engine.S.boids.length > 0;   // an opened drawing's agents stay until the thumb says otherwise
     L = HUD.layout(W, H, cfg);
     if (ig) ig.setOptions({ escapeAmplitude: cfg.escapeAmplitude });
     persist();
@@ -98,8 +108,8 @@ export function runApp2D(variant) {
     const IG = window.InkGaze;
     if (!IG) { toast(t('toast.libMissing'), 8000); return; }
     let devMouse = false; try { devMouse = new URLSearchParams(location.search).get('source') === 'mouse'; } catch (e) { /* no URL */ }
-    ig = isA   // 16a?source=mouse: InkGaze's own flow without a camera (development; nothing is saved to its settings)
-      ? new IG(Object.assign({ storageKey: 'inkwell16.inkgaze', escapeAmplitude: cfg.escapeAmplitude }, devMouse ? { source: 'mouse', persist: false } : {}))
+    ig = isA   // 17a?source=mouse: InkGaze's own flow without a camera (development; nothing is saved to its settings)
+      ? new IG(Object.assign({ storageKey: 'inkwell17.inkgaze', escapeAmplitude: cfg.escapeAmplitude }, devMouse ? { source: 'mouse', persist: false } : {}))
       : new IG({ source: 'mouse', ui: false, persist: false, smoothing: 0, rate: 60, escapeAmplitude: cfg.escapeAmplitude });
     ig.on('data', onData);
     ig.on('saccade', (s) => { if (s.escape && A.phase === 'studio' && !overlayOpen() && !A.paused) engine.escape(); });
@@ -122,7 +132,7 @@ export function runApp2D(variant) {
     A.lost = s.state === 'lost';
     A.paused = !['tracking', 'lost'].includes(s.state);
     if (isA && A.phase === 'gate' && gate) gateMessage(s);
-    if (isA && s.state === 'tracking' && A.phase === 'gate') goIntro();   // 16b waits for its Start
+    if (isA && s.state === 'tracking' && A.phase === 'gate') goIntro();   // 17b waits for its Start
   }
   function updateGaze(dt) {
     const r = A.raw; if (!r) return;
@@ -134,9 +144,146 @@ export function runApp2D(variant) {
     A.degS += (v - A.degS) * (1 - Math.exp(-dt / 70));
   }
   const live = () => !!A.gaze && !A.paused && A.state !== 'lost';
+  const aiming = () => live() && (!isD || HS.pointing);   // 17d: only a POINTING hand aims (dwells, inks)
   const onScreen = (p) => ({ x: clamp(p.x, 0, W), y: clamp(p.y, 0, H) });
   function learn(x, y) { if (isA && ig) { try { ig.learn(x, y); } catch (e) { /* not calibrated */ } } }
   gaze.onFire = (el) => { const r = el.getBoundingClientRect(); learn(r.left + r.width / 2, r.top + r.height / 2); };
+
+  // ---------------------------------------------------------------------------------------------- input (hands, 17d)
+  async function ensureHands() {
+    if (hands) return hands;
+    HM = await import('./hands.js');
+    hands = new HM.HandInput({ cfg, on: { status: onHandStatus, pose: onHandPose, wave: onHandWave, tap: onHandTap, reach: onReachDone, frame: onHandFrame } });
+    camEl = document.createElement('canvas'); camEl.id = 'handcam'; camEl.width = 320; camEl.height = 240; camEl.hidden = true;
+    camEl.setAttribute('aria-hidden', 'true'); document.body.append(camEl);
+    window.addEventListener('pagehide', () => { try { hands.destroy(); } catch (e) { /* closing */ } });
+    return hands;
+  }
+  async function startHands() {
+    unlockAudio();
+    try { await ensureHands(); } catch (e) { onHandStatus({ state: 'error', reason: (e && e.message) || String(e) }); return; }
+    hands.start();
+  }
+  function onHandStatus(s) {
+    const prev = HS.status;
+    HS.status = s.state; HS.reason = s.reason || '';
+    A.paused = !['ready', 'tracking'].includes(s.state);
+    if (A.phase === 'gate' && gate && prev !== s.state) renderGate();
+  }
+  function onHandFrame(h) {
+    HS.present = h.present; HS.pointing = h.pointing;
+    if (h.present) { HS.seenT = performance.now(); if (h.cursor) A.raw = { x: h.cursor.x, y: h.cursor.y }; }
+    A.state = !h.present ? 'lost' : h.pointing ? 'fixation' : 'rest';
+    drawHandCam(h);
+  }
+  // the stable pose changed: only the studio acts on it (screens and dialogs are worked by dwell and tap)
+  function onHandPose(p, prev) { if (A.phase === 'studio' && !overlayOpen() && !A.orbit) applyHandPose(p, prev); }
+  function applyHandPose(p, prev) {
+    if (p && p.pose === 'point') {
+      const was = prev && prev.pose === 'point';
+      if (!was) engine.setDrawMode(true);   // pointing arms Draw mode (the menu's Press to Pause still works until the next pose)
+      if (!was || prev.n !== p.n) engine.setThickness(THICK_BY_N[p.n]);
+      if (p.thumb !== HS.thumb) {           // thumb out: a new random orchestra · thumb in: the line pauses, the pen is direct
+        HS.thumb = p.thumb;
+        if (p.thumb) orchestra(); else { engine.penUp('thumb'); direct(); }
+      }
+      chip(p);
+    } else if (p && p.pose === 'fist') {    // a closed hand rests: the line stops, Draw mode off, the agents go
+      engine.penUp('fist'); engine.endGridLine(); engine.setDrawMode(false);
+      if (HS.thumb) { HS.thumb = false; direct(); }
+      chip(p);
+    } else {
+      engine.penUp(p ? p.pose : 'lost');
+      if (p && p.pose === 'palm') chip(p);
+    }
+  }
+  function orchestra() { const ps = HM.randomOrchestra(); cfg.boidCount = ps.length; engine.spawnBoids(ps); }
+  function direct() { cfg.boidCount = 0; engine.spawnBoids(null); }
+  function chip(p) { HS.chip = { text: chipText(p), t: performance.now() }; }
+  function chipText(p) {
+    if (p.pose === 'fist') return t('hand.chip.rest');
+    if (p.pose === 'palm') return t('hand.chip.palm');
+    const th = t('hud.thickness.' + THICK_BY_N[p.n]), n = engine.S.boids.length;
+    return !p.thumb ? t('hand.chip.direct', { thickness: th }) : t(n === 1 ? 'hand.chip.agent' : 'hand.chip.agents', { thickness: th, n });
+  }
+  // an open hand waved (left → right → left): Clear Drawing? (the confirmation still needs a point + dwell or a tap)
+  function onHandWave() {
+    if (A.phase !== 'studio' || overlayOpen() || A.orbit || engine.S.modal) return;
+    engine.penUp('wave'); engine.endGridLine();
+    engine.openModal({ type: 'clear' });
+    toast(t('toast.waveClear'), 4600);
+  }
+  // a finger tap = a click where the tap began (as the mouse click in 17b)
+  function onHandTap(pt) {
+    if (!pt || A.orbit || A.reach) return;
+    if (A.phase === 'studio' && !overlayOpen()) {
+      const id = HUD.hit(L, engine.S, pt);
+      if (id && /^(btn|opt|modal):/.test(id) && id !== 'modal:panel') {
+        if (id === 'modal:file') { toast(t('toast.fileDwell'), 5200); return; }   // a file dialog needs a real click
+        engine.activate(id);
+        engine.S.needLeave = id; engine.S.dwell = { id: null, t: 0, lastIn: 0 };
+      } else if (id === 'scrim' || id === 'scrim-far') { if (engine.S.modal) engine.activate('modal:cancel'); else engine.S.submenu = null; }
+      return;
+    }
+    gaze.press(pt);   // the screens: the dwell target under the fingertip fires at once
+  }
+  // the camera preview (top left): always on the first screen, then as set in Configuration (h toggles it)
+  function drawHandCam(h) {
+    if (A.reach) { hands.drawPreview(A.reach.scr.canvas, { sweep: hands.reachSweep(), label: poseLabel(h) }); A.reach.scr.progress(hands.reachProgress); }
+    if (!camEl) return;
+    const show = (cfg.handPreview !== false || A.phase === 'gate') && !A.reach && !A.orbit && HS.status !== 'idle';
+    if (camEl.hidden === show) camEl.hidden = !show;
+    if (!show) return;
+    const v = hands.video;
+    if (v && v.videoWidth && !camEl.dataset.sized) { camEl.height = Math.round(camEl.width * v.videoHeight / v.videoWidth); camEl.dataset.sized = '1'; }
+    hands.drawPreview(camEl, { label: poseLabel(h) });
+  }
+  function poseLabel(h) {
+    const p = h.pose;
+    if (!h.present || !p) return t('hand.pose.none');
+    if (p.pose === 'point') return t('hand.pose.point' + p.n) + (p.thumb ? ' + ' + t('hand.pose.thumb') : '');
+    return t('hand.pose.' + p.pose);
+  }
+  // the reach: a 5-s sweep with the pointing finger sets the part of the camera view that covers the screen
+  function openReach() {
+    if (!hands || A.reach || !hands.running) return;
+    if (engine) { engine.penUp('reach'); engine.endGridLine(); }
+    closeConfig();
+    cover(true); if (gate) gate.el.inert = true;
+    const scr = showReach({ root, onCancel: () => closeReach() });
+    const v = hands.video;
+    if (v && v.videoWidth) scr.canvas.height = Math.round(scr.canvas.width * v.videoHeight / v.videoWidth);
+    A.reach = { scr };
+    hands.startReach(5000);
+  }
+  function onReachDone(box) {
+    if (box) { cfg.handBox = box; persist(); toast(t('reach.done'), 4200); } else toast(t('reach.tooSmall'), 5200);
+    closeReach();
+  }
+  function closeReach() {
+    if (!A.reach) return false;
+    if (hands) hands.cancelReach();
+    A.reach.scr.close(); A.reach = null;
+    if (gate) gate.el.inert = false;
+    cover(false);
+    if (A.phase === 'gate') renderGate();   // Continue becomes the main button
+    return true;
+  }
+  function handsPanel() {
+    const box = document.createElement('div'); box.className = 'tracker-panel';
+    const info = document.createElement('p'); info.className = 'hint';
+    const on = hands && hands.running;
+    info.textContent = !on ? t('cfg.hands.notRunning')
+      : t('cfg.hands.status', { fps: Math.round(hands.fps || 0), delegate: hands.delegate || '—' }) + ' · ' + t(cfg.handBox ? 'cfg.hands.reachCustom' : 'cfg.hands.reachDefault');
+    const row = document.createElement('div'); row.className = 'row wrap';
+    const mk = (label, fn, enabled = true) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = label; b.disabled = !enabled; b.addEventListener('click', fn); return b; };
+    row.append(
+      mk(t('cfg.hands.calibrate'), () => { closeConfig(); openReach(); }, !!on),
+      mk(t('cfg.hands.reset'), () => { cfg.handBox = null; persist(); toast(t('cfg.hands.resetDone')); reopenConfig(); }, !!cfg.handBox),
+    );
+    box.append(info, row, Object.assign(document.createElement('p'), { className: 'hint', textContent: t('cfg.hands.help') }));
+    return box;
+  }
 
   // ---------------------------------------------------------------------------------------------- the engine
   function makeEngine() {
@@ -149,7 +296,8 @@ export function runApp2D(variant) {
         onDwellDone: (id) => { const c = HUD.targetCentre(L, engine.S, id); if (c) learn(c.x, c.y); },
       },
     });
-    engine.spawnBoids(Array.isArray(cfg.agents) && cfg.agents.length === cfg.boidCount ? cfg.agents : null);
+    if (isD) cfg.boidCount = 0;   // 17d: the direct pen; the thumb calls the agents
+    engine.spawnBoids(!isD && Array.isArray(cfg.agents) && cfg.agents.length === cfg.boidCount ? cfg.agents : null);
     agentsToCfg();
     engine.S.target = { x: surface.width / 2, y: surface.height / 2 };
   }
@@ -158,12 +306,14 @@ export function runApp2D(variant) {
   function goGate() {
     A.phase = 'gate';
     renderGate();
+    if (isD) return;   // 17d: the camera starts with the Start button
     startInput();
     if (!ig) return;
     if (isA) ig.init().then((ok) => { if (!ok && A.phase === 'gate') gateMessage({ state: 'closed' }); });
     else ig.start();
   }
   function gateSpec() {
+    if (isD) return handGateSpec();
     if (isA) return {
       message: gateText(A.gateStatus), kind: gateKind(A.gateStatus),
       buttons: [
@@ -173,6 +323,21 @@ export function runApp2D(variant) {
     };
     return { message: t('gate.mouseIntro'), buttons: [{ label: t('gate.start'), icon: 'play', primary: true, fn: () => { unlockAudio(); goIntro(); } }] };
   }
+  // 17d: Start the camera (a click: browsers ask for the camera after a gesture) → loading → "show your hand" → once a
+  // hand points: Calibrate reach · Continue (dwell or tap with the fingertip, or click)
+  function handGateSpec() {
+    const st = HS.status, mouse = { label: t('gate.useMouse'), icon: 'mouse', click: true, href: VARIANTS.b.page };
+    if (st === 'tracking') return { message: t('gate.hands.status.tracking'), buttons: [
+      { label: t('gate.hands.calibrate'), icon: 'hand', primary: !cfg.handBox, fn: () => openReach() },
+      { label: t('gate.hands.continue'), icon: 'play', primary: !!cfg.handBox, fn: () => goIntro() },
+    ] };
+    if (st === 'camera' || st === 'model' || st === 'ready') return { message: t('gate.hands.status.' + st), buttons: [mouse] };
+    const failed = ['denied', 'nocamera', 'insecure', 'error'].includes(st);
+    return {
+      message: failed ? t('gate.hands.status.' + st, { reason: HS.reason }) : t('gate.hands.intro'), kind: failed ? 'error' : '',
+      buttons: [{ label: t(failed ? 'gate.hands.retry' : 'gate.hands.start'), icon: 'hand', primary: true, click: true, fn: startHands }, mouse],
+    };
+  }
   function renderGate() { if (gate) gate.close(true); gate = showGate(Object.assign({ root, gaze, variant, onLanguage: pickLanguage }, gateSpec())); }
   const gateText = (s) => (!s ? t('gate.status.invoked') : s.state === 'error' ? (s.message || t('gate.trackerFailed')) : t('gate.status.' + s.state));
   const gateKind = (s) => (!s ? '' : s.state === 'error' ? 'error' : s.state === 'closed' ? 'warn' : '');
@@ -181,7 +346,7 @@ export function runApp2D(variant) {
     A.gateStatus = s;
     gate.setMessage(gateText(s), gateKind(s));
   }
-  const introHint = () => t(isA ? 'intro.hintEyes' : 'intro.hintPointer');
+  const introHint = () => t(isA ? 'intro.hintEyes' : isD ? 'intro.hintHand' : 'intro.hintPointer');
   function goIntro() {
     if (A.phase !== 'gate') return;
     if (gate) { gate.close(); gate = null; }
@@ -206,9 +371,14 @@ export function runApp2D(variant) {
     if (splashEl) { gaze.removeWithin(splashEl); splashEl.remove(); splashEl = null; }
     A.phase = 'studio'; document.body.classList.add('studio');
     engine.S.needLeave = null; engine.S.dwell = { id: null, t: 0, lastIn: 0 };
+    if (isD) {   // the hand already points: arm Draw mode now, but where play was cannot start a line (move first)
+      HS.thumb = engine.S.boids.length > 0;
+      if (hands && hands.pose) applyHandPose(hands.pose, null);
+      engine.S.rearm = { t: engine.S.now, at: null };
+    }
     unlockAudio();
   }
-  const overlayOpen = () => !!(A.cfgUI || A.page);
+  const overlayOpen = () => !!(A.cfgUI || A.page || A.reach);
   function cover(on) { if (splashEl) splashEl.inert = on; }
   function openPage(which) {
     if (A.page) return;
@@ -234,6 +404,7 @@ export function runApp2D(variant) {
       onLanguage: pickLanguage,
       agents: () => agentsEditor({ engine, cfg, onChange: onCfgChange }),
       tracker: isA ? trackerPanel : null,
+      hands: isD ? handsPanel : null,
       onReset: () => { replaceCfg(defaultsFor(variant)); afterCfgSwap(null); buildSurface(surface); toast(t('toast.defaults')); reopenConfig(); },
       onClearSaved: () => { storage.del(settingsKey(variant)); toast(t('toast.storageCleared', { key: variant.key }), 4200); },
       links: [
@@ -313,12 +484,12 @@ export function runApp2D(variant) {
     A.ghost = { x: clamp(ax, 0, W), y: clamp(ay, 0, H) };
   }
   function tickStudio(now, dt) {
-    const ok = live(), g = ok ? onScreen(A.gaze) : null;
+    const ok = aiming(), g = ok ? onScreen(A.gaze) : null;
     const hudId = g ? HUD.hit(L, engine.S, g) : null;
     let surf = null;
     if (g && !hudId) {
       ghost(g, dt);
-      const hold = A.holdT && now - A.holdT < 100;   // 16a: a saccade in flight: hold the pen until the escape check
+      const hold = A.holdT && now - A.holdT < 100;   // 17a: a saccade in flight: hold the pen until the escape check
       if (!hold || !A.held) A.held = { x: A.ghost.x + A.pan.x, y: A.ghost.y + A.pan.y };
       surf = A.held;
     }
@@ -333,7 +504,7 @@ export function runApp2D(variant) {
     try {
       updateGaze(dt);
       if (A.phase === 'studio' && !overlayOpen()) tickStudio(now, dt);
-      else gaze.update(live() ? onScreen(A.gaze) : null, dt, now);
+      else gaze.update(aiming() && !A.reach ? onScreen(A.gaze) : null, dt, now);
     } catch (e) { report(e); }
     try { render(now); } catch (e) { report(e); }
   }
@@ -350,13 +521,36 @@ export function runApp2D(variant) {
       HUD.render(c, L, engine, now);
       if (isA && A.lost) badge(c, t('badge.faceLost'));
       else if (isA && A.paused && A.trackerState) badge(c, t('badge.tracker', { state: A.trackerState }));
+      else if (isD && hands && hands.running && !HS.present && performance.now() - HS.seenT > 1000) badge(c, t('badge.handLost'));
     }
-    if (!live()) return;
+    if (A.reach || !live()) return;
     const g = onScreen(A.gaze);
-    if (studio) HUD.reticle(c, g.x, g.y, engine, { r: 30 });
-    else if (isA && cfg.cursorPaused !== false) {   // the screens: the paused cursor (a dashed 40 %-black circle)
+    if (isD && !HS.pointing) { handRest(c, g, studio); if (studio) drawChip(c, g); return; }   // seen, not pointing
+    if (studio) { HUD.reticle(c, g.x, g.y, engine, { r: 30 }); if (isD) drawChip(c, g); }
+    else if ((isA || isD) && cfg.cursorPaused !== false) {   // the screens: the paused cursor (a dashed 40 %-black circle)
       c.save(); c.setLineDash([5, 6]); c.lineWidth = 2; c.strokeStyle = 'rgba(25,24,23,0.4)'; c.beginPath(); c.arc(g.x, g.y, 24, 0, Math.PI * 2); c.stroke(); c.restore();
     }
+  }
+  // 17d: the hand is seen but does not point (a fist, an open hand): a small dotted ring — it neither presses nor inks.
+  // An open hand in the studio shows the wave's progress (a dot per swing; two open Clear Drawing).
+  function handRest(c, g, studio) {
+    c.save(); c.setLineDash([2, 5]); c.lineWidth = 2; c.strokeStyle = 'rgba(25,24,23,0.32)';
+    c.beginPath(); c.arc(g.x, g.y, 14, 0, Math.PI * 2); c.stroke(); c.restore();
+    const p = hands && hands.pose;
+    if (studio && p && p.pose === 'palm') {
+      const k = hands.wave.progress;
+      for (let i = 0; i < 2; i++) { c.beginPath(); c.arc(g.x - 9 + i * 18, g.y + 28, 5, 0, Math.PI * 2); c.fillStyle = i < k ? TK.red : 'rgba(25,24,23,0.2)'; c.fill(); }
+    }
+  }
+  // 17d: what a new pose did (thickness · direct or n agents · rest · wave to clear), beside the cursor for 1.8 s
+  function drawChip(c, g) {
+    const ch = HS.chip; if (!ch) return;
+    const age = performance.now() - ch.t; if (age > 1800) { HS.chip = null; return; }
+    c.save(); c.globalAlpha = age < 1400 ? 1 : 1 - (age - 1400) / 400;
+    c.font = "700 13px 'JetBrains Mono', ui-monospace, monospace"; c.textBaseline = 'middle'; c.textAlign = 'left';
+    const w = c.measureText(ch.text).width + 24, x = clamp(g.x + 24, 8, W - w - 8), y = clamp(g.y - 46, 8, H - 36);
+    c.fillStyle = 'rgba(25,24,23,0.86)'; c.beginPath(); if (c.roundRect) c.roundRect(x, y, w, 28, 14); else c.rect(x, y, w, 28); c.fill();
+    c.fillStyle = '#fff'; c.fillText(ch.text, x + 12, y + 14.5); c.restore();
   }
   function badge(c, text) {
     c.save(); c.font = "600 13px 'JetBrains Mono', ui-monospace, monospace"; c.textAlign = 'center'; c.textBaseline = 'middle';
@@ -462,6 +656,7 @@ export function runApp2D(variant) {
   }
   function closeTop() {
     if (exitOrbit()) return true;
+    if (closeReach()) return true;
     if (closeConfig()) return true;
     if (closePage()) return true;
     if (A.phase === 'studio' && engine.S.modal) { engine.activate('modal:cancel'); return true; }
@@ -475,7 +670,7 @@ export function runApp2D(variant) {
     const tg = e.target;
     if (tg && (tg.isContentEditable || /^(INPUT|SELECT|TEXTAREA)$/.test(tg.tagName || ''))) return;
     const k = (e.key || '').toLowerCase();
-    if (k === 'escape') { if (closeTop()) e.preventDefault(); return; }   // otherwise InkGaze opens its settings (16a)
+    if (k === 'escape') { if (closeTop()) e.preventDefault(); return; }   // otherwise InkGaze opens its settings (17a)
     if (A.orbit) { if ('oklçawsd'.includes(k) && k) { A.orbit.keys.add(k); e.preventDefault(); } else if (k === 'p') exitOrbit(); return; }
     if (k === 'f' && !e.repeat) { toggleFullscreen(); return; }
     if (A.phase !== 'studio' || overlayOpen()) return;
@@ -495,7 +690,8 @@ export function runApp2D(variant) {
       case 'g': engine.step('grid', +1); break;
       case 'i': enterOrbit(); break;
       case 'r': recentrePan(); toast(t('toast.recentred')); break;
-      case 'c': if (isA && ig) ig.recenter(); break;
+      case 'c': if (isA && ig) ig.recenter(); else if (isD) openReach(); break;
+      case 'h': if (!isD) return; cfg.handPreview = !cfg.handPreview; persist(); break;
       default: return;
     }
     e.preventDefault();
@@ -517,7 +713,7 @@ export function runApp2D(variant) {
       return;
     }
     if (id === 'scrim' || id === 'scrim-far') { if (engine.S.modal) engine.activate('modal:cancel'); else engine.S.submenu = null; return; }
-    if (!id && !isA && engine.S.drawMode) controllerDraw();   // 16b: a click on the canvas starts / stops the line
+    if (!id && !isA && engine.S.drawMode) controllerDraw();   // 17b / 17d: a click on the canvas starts / stops the line
   });
   stage.addEventListener('pointerdown', (e) => { if (e.button === 2) A.drag = true; });
   window.addEventListener('pointerup', (e) => { if (e.button === 2) A.drag = false; });
@@ -550,6 +746,9 @@ export function runApp2D(variant) {
   makeEngine();
   window.inkwell = {
     version: VERSION, variant, cfg, A, get engine() { return engine; }, get surface() { return surface; }, get inkgaze() { return ig; },
+    get hands() { return hands; }, HS,
+    // 17d tests without a camera: the tracker as if running; then hands.inject({pose, n, thumb, x, y, …}, t)
+    async handTest() { await ensureHands(); HS.status = 'tracking'; hands.state = 'tracking'; A.paused = false; return hands; },
     // tests: stop the live input, then inject gaze points (viewport px)
     testMode() { if (ig) ig.stop(); A.paused = false; A.state = 'fixation'; },
     inject(x, y, state = 'fixation') { onData({ x, y, calibrated: true, state, blinkMs: state === 'blink' ? 100 : 0 }); A.state = state; A.paused = false; },

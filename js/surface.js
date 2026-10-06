@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// INKWELL 16 — drawing surfaces + undo
+// INKWELL 17 — drawing surfaces + undo
 //   Surface      a raster "paper" in surface px, split into tiles (2D: one tile; VR: one tile per GPU texture).
 //                wrap: the surface is a ring (the 360° VR canvas): x wraps at `width`.
 //   draw(bbox, fn) runs fn(ctx) in SURFACE coordinates on every tile the bbox touches (and on the wrapped copy at the

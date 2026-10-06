@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// INKWELL 16 — DOM screens: intro dots · gate · welcome (splash) · About · Help · Configuration · toasts · languages
-// Everything here is gaze-operable (GazeDom: dwell with a progress ring, exit grace, target allowance) and clickable.
+// INKWELL 17 — DOM screens: intro dots · gate · welcome (splash) · About · Help · Configuration · toasts · languages ·
+// the reach calibration (17d)
+// Everything here is gaze-operable (GazeDom: dwell with a progress ring, exit grace, target allowance) and clickable
+// (17d: also a finger tap).
 // Every text comes from the language files (i18n/*.json) through t().
 // ═══════════════════════════════════════════════════════════════════════════
-import { VERSION, THICKNESS, THICKNESS_ORDER, LINE_ORDER, COLOR_ORDER, PRESETS, AGENT_RANGE, chime, unlockAudio, clamp, getPath } from './core.js';
+import { VERSION, BUILD_NO, THICKNESS, THICKNESS_ORDER, LINE_ORDER, COLOR_ORDER, PRESETS, AGENT_RANGE, chime, unlockAudio, clamp, getPath } from './core.js';
 import { t, has, lang, langMeta, languages, setLanguage, addLanguageFile, removeLanguageFile, exportLanguage } from './i18n.js';
 
 // The Help page's tutorial: paste a YouTube video id here (e.g. 'dQw4w9WgXcQ') and it replaces the placeholder.
@@ -25,8 +27,8 @@ const h = (tag, attrs = {}, ...kids) => {
 };
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const SIX_LINK = '<a href="https://six.fba.up.pt/" target="_blank" rel="noopener">SiX</a>';
-export const variantName = (v) => '16' + v.id + ' · ' + t('variant.' + v.id);
-export const variantTitle = (v) => t('variant.title', { id: '16' + v.id, name: t('variant.' + v.id) });
+export const variantName = (v) => BUILD_NO + v.id + ' · ' + t('variant.' + v.id);
+export const variantTitle = (v) => t('variant.title', { id: BUILD_NO + v.id, name: t('variant.' + v.id) });
 
 export const ICONS = {
   play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>',
@@ -40,6 +42,7 @@ export const ICONS = {
   close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
   eye: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.2" fill="currentColor"/></svg>',
   mouse: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="3" width="11" height="18" rx="5.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 6.5v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  hand: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 12.5V4.6a1.6 1.6 0 0 1 3.2 0v6.2m0-.6a1.6 1.6 0 0 1 3.2 0v1.2m0-.4a1.6 1.6 0 0 1 3.1.4v4.1c0 3.3-2.5 5.9-5.8 5.9h-.9a5.6 5.6 0 0 1-4.5-2.3l-2.6-3.6a1.6 1.6 0 0 1 2.4-2.1l2 1.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   vr: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8.5c0-1.4 1.1-2.5 2.5-2.5h13c1.4 0 2.5 1.1 2.5 2.5v6c0 1.4-1.1 2.5-2.5 2.5h-3.2l-2-2.4a1.7 1.7 0 0 0-2.6 0L8.7 17H5.5A2.5 2.5 0 0 1 3 14.5z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="11.3" r="1.8" fill="currentColor"/><circle cx="16" cy="11.3" r="1.8" fill="currentColor"/></svg>',
 };
 
@@ -80,6 +83,16 @@ export class GazeDom {
       }
     }
     return hit;
+  }
+  // a click at p (17d: a finger tap): the dwell target under it fires at once (then, as after a dwell, p must leave it)
+  press(p) {
+    const tg = this.targets.find((g) => this._visible(g.el) && this._hit(g, p));
+    if (!tg) return false;
+    if (this.cur) this._paint(this.cur, 0, false);
+    this.cur = null; this.t = 0; this.needLeave = tg;
+    if (this.onFire) { try { this.onFire(tg.el); } catch (e) { /* learning is optional */ } }
+    tg.fire(tg.el, 'tap');
+    return true;
   }
   _paint(tg, k, on) { tg.el.style.setProperty('--dwell', k.toFixed(3)); tg.el.classList.toggle('gazed', !!on); }
 }
@@ -129,7 +142,7 @@ export function showIntro({ root, gaze, cfg, ppd, hint, onDone }) {
   return sec;
 }
 
-// ═══ gate: the first screen of a variant (16a: while InkGaze has the stage; 16b / 16c: Start) ═══════════════════════
+// ═══ gate: the first screen of a variant (17a: while InkGaze has the stage; 17b / 17c: Start; 17d: the camera) ═══════
 // buttons: {label, icon?, fn?, href?, primary?, click? (click only: not a gaze target — e.g. before calibration)}
 export function showGate({ root, gaze, variant, message = '', kind = '', buttons = [], onLanguage }) {
   const msg = h('p', { class: 'gate-msg' + (kind ? ' ' + kind : ''), role: 'status', 'aria-live': 'polite', text: message });
@@ -210,8 +223,8 @@ const SECTIONS = [
     { k: 'dwellStart', t: 'check' },
     { k: 'canvasDwellMs', t: 'range', min: 300, max: 3000, step: 50, unit: 'ms' },
     { k: 'dwellStop', t: 'check' },
-    { k: 'escapeStop', t: 'check' },
-    { k: 'escapePauses', t: 'check' },
+    { k: 'escapeStop', t: 'check', variants: 'abc' },
+    { k: 'escapePauses', t: 'check', variants: 'abc' },
     { k: 'escapeAmplitude', t: 'range', min: 0.1, max: 0.6, step: 0.05, fmt: pct, variants: 'ab' },
     { k: 'escapeDegS', t: 'range', min: 60, max: 400, step: 10, unit: '°/s', variants: 'c' },
     { k: 'blinkToggle', t: 'check', variants: 'a' },
@@ -227,7 +240,7 @@ const SECTIONS = [
     { k: 'lineMode', t: 'select', options: () => LINE_ORDER.map((k) => [k, t('hud.line.' + k)]) },
     { k: 'thickness', t: 'select', options: () => THICKNESS_ORDER.map((k) => [k, t('hud.thickness.' + k) + ' — ' + THICKNESS[k].nom + '°']) },
     { k: 'color', t: 'select', options: () => COLOR_ORDER.map((k) => [k, t('hud.color.' + k)]) },
-    { k: 'ppd', t: 'range', min: 20, max: 80, step: 1, unit: 'px/°', variants: 'ab' },
+    { k: 'ppd', t: 'range', min: 20, max: 80, step: 1, unit: 'px/°', variants: 'abd' },
     { k: 'lineParams.rigid.0', t: 'range', min: 0.05, max: 10, step: 0.05, unit: 'Hz' },
     { k: 'lineParams.rigid.1', t: 'range', min: 0, max: 2, step: 0.01 },
     { k: 'lineParams.dynamic.0', t: 'range', min: 0.05, max: 10, step: 0.05, unit: 'Hz' },
@@ -247,7 +260,7 @@ const SECTIONS = [
     { k: 'splatInt', t: 'range', min: 20, max: 500, step: 10, unit: 'ms' },
   ] },
   { key: 'agents', custom: 'agents' },
-  { key: 'amp', variants: 'ab', items: [
+  { key: 'amp', variants: 'abd', items: [
     { k: 'gazeAmp', t: 'range', min: 0.5, max: 10, step: 0.1, unit: '×' },
     { k: 'panEnabled', t: 'check' },
     { k: 'comfortFrac', t: 'range', min: 0.4, max: 1, step: 0.01 },
@@ -272,6 +285,14 @@ const SECTIONS = [
     { k: 'invertY', t: 'check' },
   ] },
   { key: 'tracker', variants: 'a', custom: 'tracker' },
+  { key: 'hands', variants: 'd', custom: 'hands', items: [
+    { k: 'handSmooth', t: 'range', min: 0, max: 1, step: 0.05 },
+    { k: 'poseStableMs', t: 'range', min: 40, max: 400, step: 10, unit: 'ms' },
+    { k: 'handTap', t: 'check' },
+    { k: 'waveMinSwing', t: 'range', min: 0.04, max: 0.3, step: 0.01, fmt: pct },
+    { k: 'waveWindowMs', t: 'range', min: 600, max: 3000, step: 100, unit: 'ms' },
+    { k: 'handPreview', t: 'check' },
+  ] },
   { key: 'data', custom: 'data' },
 ];
 const fmtVal = (it, v) => (it.fmt ? it.fmt(v) : (Math.abs(v) >= 100 || Number.isInteger(it.step) ? Math.round(v) : (+v).toFixed(it.step < 0.1 ? 2 : 1)) + (it.unit ? ' ' + it.unit : ''));
@@ -315,7 +336,7 @@ function languagePanel({ onPick }) {
 
 // A layer (not a top-layer <dialog>) so the gaze reticle, drawn above everything, stays visible over it. The close
 // button and the scroll arrows are gaze targets; the controls are for the mouse / keyboard (a helper or the researcher).
-export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, onReset, onClearSaved, onLanguage, links = [], onClose, scrollTop = 0 }) {
+export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, hands, onReset, onClearSaved, onLanguage, links = [], onClose, scrollTop = 0 }) {
   const old = $('#config'); if (old) old.remove();
   const prevFocus = document.activeElement;
   let layer = null;
@@ -336,10 +357,12 @@ export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, onRe
   for (const sec of SECTIONS) {
     if (sec.variants && !sec.variants.includes(variant.id)) continue;
     if (sec.custom === 'tracker' && !tracker) continue;
+    if (sec.custom === 'hands' && !hands) continue;
     const box = h('section', { class: 'cfg-sec', 'data-sec': sec.key }, h('h3', { text: t('cfg.sections.' + sec.key) }));
     if (sec.custom === 'language') box.append(languagePanel({ onPick: onLanguage }));
     else if (sec.custom === 'agents') box.append(agents());
     else if (sec.custom === 'tracker') box.append(tracker());
+    else if (sec.custom === 'hands') box.append(hands());
     else if (sec.custom === 'data') {
       const r = h('button', { class: 'btn', type: 'button', text: t('cfg.data.reset') }), c = h('button', { class: 'btn', type: 'button', text: t('cfg.data.clearSaved') });
       r.addEventListener('click', () => onReset()); c.addEventListener('click', () => onClearSaved());
@@ -349,7 +372,8 @@ export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, onRe
         for (const l of links) { const b = h('button', { class: 'btn ghost', type: 'button', text: l.label }); b.addEventListener('click', () => l.fn()); lr.append(b); }
         box.append(lr);
       }
-    } else for (const it of sec.items) {
+    }
+    for (const it of sec.items || []) {
       if (it.variants && !it.variants.includes(variant.id)) continue;
       const id = 'cfg-' + it.k.replace(/\./g, '-'), label = itemText(it.k, 'label') || it.k, help = itemText(it.k, 'help');
       let input; const out = h('output', { for: id });
@@ -384,6 +408,23 @@ export function openConfig({ variant, cfg, gaze, onChange, agents, tracker, onRe
   gaze.add(closeBtn, close); gaze.add(up, () => scroll(-1), { ms: 600 }); gaze.add(down, () => scroll(1), { ms: 600 });
   try { closeBtn.focus({ preventScroll: true }); } catch (e) { /* old browser */ }
   return { close, sync, el: layer, get scrollTop() { return body.scrollTop; } };
+}
+
+// ═══ 17d: calibrate the reach — a 5-s sweep with the pointing finger, the camera view shown large ════════════════
+// (Cancel is click-only, and Esc: the cursor's mapping is what is being measured)
+export function showReach({ root, onCancel }) {
+  const cv = h('canvas', { class: 'reach-cam', width: 640, height: 480, 'aria-hidden': 'true' });
+  const fill = h('span'), bar = h('div', { class: 'reach-bar', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': '0' }, fill);
+  const cancel = h('button', { class: 'btn', type: 'button', text: t('common.cancel') });
+  cancel.addEventListener('click', () => onCancel());
+  const sec = h('section', { class: 'screen reach', 'aria-label': t('reach.title') },
+    h('h2', { text: t('reach.title') }), h('p', { class: 'reach-hint', text: t('reach.hint') }), cv, bar, cancel);
+  root.append(sec);
+  return {
+    el: sec, canvas: cv,
+    progress(k) { const v = Math.round(clamp(k, 0, 1) * 100); fill.style.width = v + '%'; bar.setAttribute('aria-valuenow', String(v)); },
+    close() { sec.remove(); },
+  };
 }
 
 // the agents (boids) editor: presets, one card per agent (CRUD + five live sliders), the template

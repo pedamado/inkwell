@@ -1,5 +1,45 @@
 # Inkwell — changelog
 
+## 17.0.0 — 2026-10-06 · `inkwell-17` · 17d hand gestures
+
+Build 17 is build 16.1 in four variants: **17a eye tracker**, **17b mouse cursor**, **17c cardboard** (the same code and
+behaviour as 16a–16c, with the 16.1 Clear fix) and the new **17d hand gestures** — a mode for **caregivers and
+able-bodied participants**, who draw in the same studio, with the same menu, using one hand in front of the webcam.
+
+### 17d · hand gestures (new)
+- **Input** (`js/hands.js`): MediaPipe **HandLandmarker** (Tasks Vision pinned to 0.10.35, as InkGaze: no usage
+  telemetry; float16 hand model), VIDEO mode on every camera frame, up to two hands with the one in use kept, GPU with a
+  CPU fallback, a warm-up inference while "Loading the hand model…" shows. The camera image never leaves the device.
+- **The cursor is the index fingertip**, always (with one, two or three fingers up), mapped from a **reach box** in the
+  mirrored camera view to the whole screen — the menu, the corners and the pan edges are reachable with the whole hand
+  in view — and 1€-filtered.
+- **Poses** (read from the 3D landmarks, so they hold at any hand angle and distance; hysteresis per finger; a pose
+  counts after 120 ms): **index** → Draw mode on, **thin** line · **index + middle** → **medium** · **index + middle +
+  ring** → **thick** (also while drawing) · **thumb out** ("L", with 1–3 fingers) → **1–5 agents with random settings**
+  (always numerically stable), a new set each time the thumb comes out · **thumb back in** → the line pauses, the
+  agents go, the pen is direct · **fist** → rest (Draw mode off) · **open hand waved** (left → right → left, two swings
+  of ≥ 10 % of the view within 1.6 s) → **Clear Drawing?** (the confirmation still needs a point + dwell or a tap).
+- **Pause to toggle:** holding the fingertip still (0.8 s) starts the line and, again, pauses it; on a button it
+  presses it, as the eyes do. A **finger tap** (curl and straighten the pointing finger within ½ s) clicks the button
+  under the cursor. Only a pointing hand presses or inks.
+- **First screen:** *Start the camera* → the hand is found → **Calibrate reach** (trace a large rectangle in the air for
+  5 s; the 2nd–98th percentiles of the fingertip become the box) or **Continue**. Key `c` recalibrates, `h` toggles the
+  camera preview.
+- **Camera preview** (top left): the hand (extended fingers in red), the reach box, five bars for how extended each
+  finger reads, and the pose. A short label beside the cursor confirms each new pose ("Thick Line · 3 agents").
+- **Configuration → Hand gestures:** camera status, Calibrate reach, Default reach, fingertip smoothing, pose hold,
+  finger tap, wave size and time, camera preview. Amplification and the assistive pan are available in 17d too; the
+  escape-saccade settings are hidden (no eyes). Defaults for 17d: dwell starts **and** stops the line, the cursor stays
+  visible while drawing, no agents until the thumb comes out.
+
+### All variants
+- **The canvas dwell no longer re-fires in place:** after a dwell has started or stopped the line, the cursor must move
+  two dwell radii before the next one counts (with dwell-start and dwell-stop both on, holding still toggled the line
+  every 0.8 s).
+- Build 17 keeps **its own settings** (`inkwell17.*` in the browser; sessions database `inkwell-17`), so builds 16 and 17
+  can be compared side by side. Pages, titles, the PRD and all texts are renamed to 17; English and Portuguese texts for
+  17d (About, Help with a gesture guide, Configuration).
+
 ## 16.1.0 — 2026-10-06 · Clear Drawing fix
 
 **Clear Drawing could bring the studio to a halt.** Two causes, both fixed:

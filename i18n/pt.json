@@ -4,7 +4,7 @@
     "name": "Portuguese",
     "nativeName": "Português",
     "dir": "ltr",
-    "version": "16.1.0",
+    "version": "17.0.0",
     "translators": "Claude Opus 5.5 (português europeu) — a rever",
     "notes": "Português europeu. Traduza apenas os VALORES: mantenha as chaves, os {marcadores} e as etiquetas HTML. As chaves em falta são mostradas em inglês."
   },
@@ -12,6 +12,7 @@
     "a": "seguimento ocular",
     "b": "cursor do rato",
     "c": "cardboard",
+    "d": "gestos da mão",
     "title": "Inkwell {id} · {name}"
   },
   "common": {
@@ -38,12 +39,30 @@
       "calibrating": "A calibrar: olhe para cada ponto até o círculo se fechar.",
       "paused": "O seguimento ocular está em pausa.",
       "closed": "As definições do seguimento ocular foram fechadas sem iniciar. Abra-as de novo para calibrar, ou use a versão com rato."
+    },
+    "hands": {
+      "intro": "Desenhe com uma mão: a câmara segue o seu dedo indicador e os dedos escolhem a linha. Ligue a câmara abaixo e autorize-a — a imagem nunca sai deste dispositivo.",
+      "start": "Ligar a câmara",
+      "retry": "Tentar de novo",
+      "calibrate": "Calibrar o alcance",
+      "continue": "Continuar",
+      "status": {
+        "camera": "A ligar a câmara… (autorize-a se o navegador o pedir)",
+        "model": "A carregar o modelo da mão…",
+        "ready": "Mostre uma mão à câmara, à distância de um braço, e aponte com o dedo indicador.",
+        "tracking": "Mão encontrada. Mantenha a ponta do dedo parada sobre um botão para o premir — ou toque: dobre o dedo e estique-o. Da primeira vez, calibre o seu alcance.",
+        "denied": "A câmara não foi autorizada. Autorize-a para esta página (o ícone da câmara na barra de endereço) e tente de novo.",
+        "nocamera": "Não foi encontrada nenhuma câmara. Ligue uma e tente de novo, ou use a versão com rato.",
+        "insecure": "A câmara precisa de uma página segura: abra-a em http://localhost ou por https://.",
+        "error": "Não foi possível iniciar o seguimento da mão: {reason}"
+      }
     }
   },
   "intro": {
     "hintEyes": "Olhe para cada ponto até ele rebentar",
     "hintPointer": "Aponte para cada ponto e espere até ele rebentar",
     "hintHead": "Rode a cabeça para cada ponto e espere até ele rebentar",
+    "hintHand": "Aponte para cada ponto e fique parado até ele rebentar",
     "dot": "Ponto {n}",
     "aria": "Aquecimento: {hint}"
   },
@@ -62,6 +81,7 @@
     "a": "Seguimento ocular por webcam com o InkGaze.js — o protótipo principal.",
     "b": "O rato faz de olhos: a mesma permanência e a mesma fuga, para testes rápidos.",
     "c": "A cabeça aponta: uma tela de 360° num telemóvel em óculos Cardboard, em óculos WebXR ou numa pré-visualização.",
+    "d": "A mão desenha: a webcam segue o dedo indicador, as posições dos dedos definem a linha e o polegar chama os agentes — para cuidadores e participantes sem incapacidade motora.",
     "open": "Abrir",
     "docs": "Documentação",
     "readme": "Leia-me",
@@ -118,7 +138,27 @@
   },
   "badge": {
     "faceLost": "A câmara não vê o rosto",
-    "tracker": "Seguimento ocular: {state}"
+    "tracker": "Seguimento ocular: {state}",
+    "handLost": "Mostre a mão à câmara"
+  },
+  "hand": {
+    "pose": {
+      "none": "sem mão",
+      "fist": "punho",
+      "palm": "mão aberta",
+      "other": "—",
+      "point1": "1 dedo",
+      "point2": "2 dedos",
+      "point3": "3 dedos",
+      "thumb": "polegar"
+    },
+    "chip": {
+      "direct": "{thickness} · direta",
+      "agent": "{thickness} · 1 agente",
+      "agents": "{thickness} · {n} agentes",
+      "rest": "punho · repouso",
+      "palm": "mão aberta · acene para limpar"
+    }
   },
   "toast": {
     "libMissing": "O InkGaze (lib/inkgaze.js) não foi carregado.",
@@ -140,20 +180,21 @@
     "badFile": "Este ficheiro não é uma sessão válida do Inkwell (JSON).",
     "language": "Idioma: {name}",
     "languageLoaded": "Ficheiro de idioma carregado: {name} ({count} textos).",
-    "languageBad": "Este ficheiro não é um ficheiro de idioma do Inkwell: {reason}"
+    "languageBad": "Este ficheiro não é um ficheiro de idioma do Inkwell: {reason}",
+    "waveClear": "Limpar o desenho? Aponte para Limpar e fique parado (ou toque). Cancelar mantém-no."
   },
   "about": {
     "title": "Sobre o Inkwell",
     "html": [
       "<p class=\"lead\">O <b>Inkwell</b> é o estúdio de desenho com o olhar do <b><a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX — O Desenho com vista à Re-conexão Social</a></b>, um projeto de investigação exploratória da Faculdade de Belas Artes da Universidade do Porto (FBAUP) financiado pela FCT (2023.11224.PEX). O SiX explora o desenho como expressão e re-conexão social para pessoas com <b>Síndrome de Locked-In</b> (LIS, ou síndrome de encarceramento) parcial a completa — para quem os olhos podem ser o único canal fiável — através do co-design com a Associação Portuguesa de Esclerose Lateral Amiotrófica (APELA).</p>",
       "<h3>De onde vem este protótipo</h3>",
-      "<p>A linha começou como uma experiência ao estilo do EyeWriter e cresceu através do <i>GazeDraw</i> (uma malha de pontos ativados pelo olhar) e das versões WebXR 12–15 do <i>Gaze Draw</i> (tinta contínua, agentes de desenho autónomos, amplificação do olhar, um modo assistido por grelha, uma camada de comandos para assistentes) até ao <b>Inkwell 16</b>. Uma primeira avaliação com participantes sem incapacidade motora (2026) mostrou que, abaixo de um limiar de <i>correspondência</i> entre a intenção e o traço, desenhar com o olhar reduz-se a apontar — por isso a calibração e o ajuste a cada pessoa são condições prévias da expressão. O Inkwell 16 responde com um seguimento ocular calibrado por webcam, definições por utilizador e alternativas à permanência do olhar (a sacada de fuga, o piscar de olhos).</p>",
+      "<p>A linha começou como uma experiência ao estilo do EyeWriter e cresceu através do <i>GazeDraw</i> (uma malha de pontos ativados pelo olhar) e das versões WebXR 12–15 do <i>Gaze Draw</i> (tinta contínua, agentes de desenho autónomos, amplificação do olhar, um modo assistido por grelha, uma camada de comandos para assistentes) até ao <b>Inkwell 16</b> e <b>17</b>. Uma primeira avaliação com participantes sem incapacidade motora (2026) mostrou que, abaixo de um limiar de <i>correspondência</i> entre a intenção e o traço, desenhar com o olhar reduz-se a apontar — por isso a calibração e o ajuste a cada pessoa são condições prévias da expressão. O Inkwell responde com um seguimento ocular calibrado por webcam, definições por utilizador e alternativas à permanência do olhar (a sacada de fuga, o piscar de olhos).</p>",
       "<h3>Para que serve este protótipo web</h3>",
-      "<p>Uma bancada de testes rápida e aberta para o <b>design de interação</b> do desenho com o olhar. Uma aplicação, três variantes: <b>16a</b> seguimento ocular por webcam (a principal), <b>16b</b> cursor do rato (os mesmos comportamentos, para testes rápidos), <b>16c</b> Cardboard / óculos de RV com uma tela de 360° — para que as ideias possam ser experimentadas em qualquer lugar antes de passarem para o protótipo principal do projeto.</p>",
+      "<p>Uma bancada de testes rápida e aberta para o <b>design de interação</b> do desenho com o olhar. Uma aplicação, quatro variantes: <b>17a</b> seguimento ocular por webcam (a principal), <b>17b</b> cursor do rato (os mesmos comportamentos, para testes rápidos), <b>17c</b> Cardboard / óculos de RV com uma tela de 360°, e <b>17d</b> gestos da mão através da webcam, para cuidadores e participantes sem incapacidade motora, que desenham no mesmo estúdio, com o mesmo menu — para que as ideias possam ser experimentadas em qualquer lugar antes de passarem para o protótipo principal do projeto.</p>",
       "<h3>O protótipo principal do SiX</h3>",
       "<p>A aplicação SiX para os <b>HTC Vive Focus Vision</b> (Unity, com seguimento ocular nos óculos) é o protótipo principal do projeto: construída pela equipa liderada por <b>Eliana Penedos-Santiago</b> e desenvolvida por <b>Manuel Silva</b> (CITAR · Universidade Católica Portuguesa).</p>",
       "<h3>InkGaze.js</h3>",
-      "<p>Um resultado adicional deste trabalho: o <b>InkGaze.js</b>, uma biblioteca de seguimento ocular por webcam, pronta a integrar, que afina a abordagem de bibliotecas para navegador como o WebGazer para o desenho só com o olhar — calibração de 5 ou 9 pontos com uma bolha que encolhe, compensação dos movimentos da cabeça, um modelo que continua a aprender com aquilo para que se olha, e eventos de piscar e de sacadas. O Inkwell 16a funciona com ela.</p>",
+      "<p>Um resultado adicional deste trabalho: o <b>InkGaze.js</b>, uma biblioteca de seguimento ocular por webcam, pronta a integrar, que afina a abordagem de bibliotecas para navegador como o WebGazer para o desenho só com o olhar — calibração de 5 ou 9 pontos com uma bolha que encolhe, compensação dos movimentos da cabeça, um modelo que continua a aprender com aquilo para que se olha, e eventos de piscar e de sacadas. O Inkwell 17a funciona com ela.</p>",
       "<h3>Créditos</h3>",
       "<p><b><a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX — O Desenho com vista à Re-conexão Social</a></b> (FBAUP · FCT 2023.11224.PEX). Este protótipo existe no âmbito — e por causa — do <a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">projeto SiX</a>. <b>Investigadora Responsável:</b> Eliana Penedos-Santiago (ID+ · FBAUP). <b>Equipa:</b> Andreia Pinto de Sousa, Bruno Giesteira, Cláudia Lima, Pedro Amado, Sílvia Simões, Viviane Peçaibes. <b>Consultores:</b> Filipe Gonçalves (APELA), Miguel Alves-Ferreira (CGPP-IBMC / i3S). <b>Colaboradores:</b> Lara Portelinha, Manuel Silva, Vasco Praça. <b>Parceiros:</b> APELA · ADITGAMES · i3S / IBMC · Fraunhofer AICOS.</p>",
       "<dl class=\"credits\">",
@@ -166,7 +207,7 @@
       "<dt>Da aplicação <a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX</a> de RV</dt>",
       "<dd>Definições e decisões de interação testadas por Manuel Silva na aplicação para HTC Vive Focus Vision (Unity) — por exemplo, o cursor escondido durante o desenho e a confirmação de Limpar.</dd>",
       "<dt>Protótipo web</dt>",
-      "<dd>Dirigido por Pedro Amado; código escrito com modelos de IA — Google Gemini 2.5 Pro e 3.1 Pro (primeiras versões) e Anthropic Claude Opus 5.5 (todo o código do Inkwell 16 e do InkGaze.js).</dd>",
+      "<dd>Dirigido por Pedro Amado; código escrito com modelos de IA — Google Gemini 2.5 Pro e 3.1 Pro (primeiras versões) e Anthropic Claude Opus 5.5 (todo o código do Inkwell 16–17 e do InkGaze.js).</dd>",
       "<dt>InkGaze.js</dt>",
       "<dd>Conceito e design de Pedro Amado; desenvolvimento de Claude Opus 5.5 (outubro de 2026).</dd>",
       "<dt>Projeto</dt>",
@@ -181,9 +222,10 @@
     "html": [
       "<h3>Primeiros passos</h3>",
       "<ul>",
-      "<li><b>16a · seguimento ocular</b> — abrem primeiro as definições do InkGaze: carregue em <b>Start</b> e olhe para cada ponto até o círculo se fechar (5 pontos; 9 para o melhor ajuste). Uma calibração guardada só precisa de uma verificação rápida. Depois, a aplicação assume o controlo.</li>",
-      "<li><b>16b · cursor do rato</b> — a mesma aplicação e os mesmos comportamentos, comandados pelo ponteiro (sem câmara).</li>",
-      "<li><b>16c · cardboard</b> — num telemóvel dentro de óculos Cardboard (ou em óculos WebXR): aponta-se com a cabeça. Dê a volta: a tela tem 360°.</li>",
+      "<li><b>17a · seguimento ocular</b> — abrem primeiro as definições do InkGaze: carregue em <b>Start</b> e olhe para cada ponto até o círculo se fechar (5 pontos; 9 para o melhor ajuste). Uma calibração guardada só precisa de uma verificação rápida. Depois, a aplicação assume o controlo.</li>",
+      "<li><b>17b · cursor do rato</b> — a mesma aplicação e os mesmos comportamentos, comandados pelo ponteiro (sem câmara).</li>",
+      "<li><b>17c · cardboard</b> — num telemóvel dentro de óculos Cardboard (ou em óculos WebXR): aponta-se com a cabeça. Dê a volta: a tela tem 360°.</li>",
+      "<li><b>17d · gestos da mão</b> — a câmara segue o seu dedo indicador: carregue em <b>Ligar a câmara</b>, mostre uma mão e (da primeira vez) calibre o alcance. Ver <i>Gestos da mão</i> abaixo.</li>",
       "</ul>",
       "<h3>O primeiro ecrã e o ecrã de boas-vindas</h3>",
       "<p>Olhe para cada um dos três pontos até ficar vermelho e rebentar (os pontos crescem um pouco enquanto olha). Depois, <b>começar</b> abre o estúdio; <b>Sobre</b>, <b>Ajuda</b> e <b>Configurações</b> estão em baixo, os idiomas em cima. Tudo funciona com o olhar (uma permanência de 0,8 s) ou com um clique.</p>",
@@ -202,21 +244,37 @@
       "<li><b>Carregar para Desenhar.</b></li>",
       "<li>Olhe para onde a linha deve começar e mantenha o olhar parado: o anel à volta do cursor enche-se e a linha começa (pode desligar esta permanência na Configuração: a linha começa logo que o olhar estabiliza).</li>",
       "<li>Desenhe movendo os olhos. O agente (uma pequena caneta com peso) segue o seu olhar e deposita a tinta.</li>",
-      "<li>Para parar, faça um <b>olhar rápido e amplo para longe</b> (a <i>sacada de fuga</i>): a linha termina e o estúdio volta ao repouso. Opcional: manter o desenho ativo depois de uma fuga, parar com uma permanência, ou com um piscar longo (16a).</li>",
+      "<li>Para parar, faça um <b>olhar rápido e amplo para longe</b> (a <i>sacada de fuga</i>): a linha termina e o estúdio volta ao repouso. Opcional: manter o desenho ativo depois de uma fuga, parar com uma permanência, ou com um piscar longo (17a).</li>",
       "</ol>",
       "<h3>Agentes, amplificação, deslocamento</h3>",
       "<p>Por omissão, desenha um agente. Acrescente, remova, torne aleatórios ou ajuste os agentes na Configuração (velocidade, mola, amortecimento, massa, agitação), ou escolha uma predefinição. A amplificação do olhar faz com que pequenos movimentos dos olhos cheguem mais longe; o deslocamento assistido (desligado por omissão) desloca uma tela maior quando chega à sua margem.</p>",
-      "<h3>RV (16c)</h3>",
+      "<h3>RV (17c)</h3>",
       "<p>Rode a cabeça: a tela envolve-o por completo. O menu espera um momento e depois desliza para ficar abaixo dos seus olhos. Olhe para baixo para o usar; toque duas vezes no ecrã para recentrar.</p>",
+      "<h3>Gestos da mão (17d)</h3>",
+      "<ul>",
+      "<li><b>Aponte com o dedo indicador</b> (os outros dedos fechados, o polegar recolhido): o modo de desenho liga-se, <b>linha fina</b>. A ponta do dedo é o cursor; a caixa tracejada na pré-visualização da câmara é a parte da imagem que cobre o ecrã.</li>",
+      "<li><b>Indicador + médio</b>: linha média. <b>Indicador + médio + anelar</b>: linha grossa (o cursor fica sempre na ponta do indicador).</li>",
+      "<li><b>Mantenha a ponta do dedo parada</b> (0,8 s) para começar a linha, e de novo para a pausar. Parada sobre um botão, prime-o — como os olhos. Ou <b>toque</b>: dobre o dedo e estique-o depressa.</li>",
+      "<li><b>Polegar de fora</b> (um «L» com 1, 2 ou 3 dedos): <b>agentes</b> — 1 a 5 agentes de desenho com definições aleatórias desenham consigo, com a mesma espessura. <b>Polegar recolhido</b>: a linha pausa, os agentes desaparecem e o traço volta a ser direto. Cada vez que o polegar sai, há um novo conjunto aleatório.</li>",
+      "<li><b>Feche a mão</b> (punho): repouso — a linha para e o modo de desenho desliga-se.</li>",
+      "<li><b>Mão aberta, palma para a câmara, a acenar</b> (esquerda → direita → esquerda): abre-se <i>Limpar todo o desenho?</i>. Confirme apontando para <i>Limpar</i> e ficando parado (ou toque); <i>Cancelar</i> mantém o desenho.</li>",
+      "<li>Teclas: <kbd>c</kbd> calibrar o alcance · <kbd>h</kbd> pré-visualização da câmara sim/não.</li>",
+      "</ul>",
       "<h3>Afinar o «toque de Midas»</h3>",
       "<p>Em Configuração → Ativação: a permanência no menu (0,8 s), a permanência na tela, a tolerância de saída, a margem dos alvos (área de toque extra invisível), a velocidade de estabilização e o tamanho da fuga. Se as coisas disparam sozinhas, aumente a permanência; se parecem lentas, diminua-a.</p>",
       "<h3>Teclado / comando (assistentes)</h3>",
-      "<p><kbd>q</kbd> desenhar sim/não · <kbd>w</kbd>/<kbd>s</kbd> espessura · <kbd>a</kbd>/<kbd>d</kbd> tipo de linha · <kbd>o</kbd>/<kbd>l</kbd> cor · <kbd>k</kbd>/<kbd>ç</kbd> desfazer/refazer · <kbd>e</kbd>×2 limpar · <kbd>g</kbd> grelha · <kbd>i</kbd>/<kbd>p</kbd> vista 3D sim/não · <kbd>r</kbd> recentrar a tela · <kbd>c</kbd> recentrar o seguimento ocular (16a) · <kbd>f</kbd> ecrã inteiro · <kbd>Esc</kbd> fechar / definições do seguimento ocular.</p>",
+      "<p><kbd>q</kbd> desenhar sim/não · <kbd>w</kbd>/<kbd>s</kbd> espessura · <kbd>a</kbd>/<kbd>d</kbd> tipo de linha · <kbd>o</kbd>/<kbd>l</kbd> cor · <kbd>k</kbd>/<kbd>ç</kbd> desfazer/refazer · <kbd>e</kbd>×2 limpar · <kbd>g</kbd> grelha · <kbd>i</kbd>/<kbd>p</kbd> vista 3D sim/não · <kbd>r</kbd> recentrar a tela · <kbd>c</kbd> recentrar o seguimento ocular (17a) ou calibrar o alcance (17d) · <kbd>h</kbd> pré-visualização da câmara (17d) · <kbd>f</kbd> ecrã inteiro · <kbd>Esc</kbd> fechar / definições do seguimento ocular.</p>",
       "<h3>Idiomas</h3>",
       "<p>Estão incluídos o inglês e o português. Para acrescentar ou corrigir um idioma, copie <code>i18n/en.json</code>, traduza os textos e carregue-o em Configuração → Idioma (fica guardado neste navegador), ou acrescente-o à pasta <code>i18n</code> e ao <code>languages.json</code>.</p>",
       "<h3>Privacidade</h3>",
       "<p>A imagem da câmara nunca sai do seu dispositivo. As definições e os desenhos guardados ficam neste navegador, a não ser que guarde ficheiros.</p>"
     ]
+  },
+  "reach": {
+    "title": "Calibrar o seu alcance",
+    "hint": "Aponte com o dedo indicador e desenhe no ar um retângulo grande — tão longe para a esquerda, para a direita, para cima e para baixo quanto for confortável (até onde ficará o menu). Mantenha a mão inteira à vista.",
+    "done": "Alcance guardado: a ponta do dedo cobre agora o ecrã inteiro.",
+    "tooSmall": "O movimento foi pequeno demais, por isso mantém-se o alcance anterior. Tente de novo com movimentos maiores."
   },
   "orbit": {
     "title": "Vista de análise 3D · experimental",
@@ -249,6 +307,7 @@
       "grid": "Modo grelha",
       "vr": "RV — Cardboard / óculos",
       "tracker": "Seguimento ocular (InkGaze)",
+      "hands": "Gestos da mão (câmara)",
       "data": "Definições"
     },
     "items": {
@@ -440,6 +499,30 @@
       },
       "invertY": {
         "label": "Inverter a mira da cabeça (cima / baixo)"
+      },
+      "handSmooth": {
+        "label": "Suavização da ponta do dedo",
+        "help": "Estabiliza o cursor: 0 = sem filtro, 1 = o mais suave (mais atraso)."
+      },
+      "poseStableMs": {
+        "label": "Duração da posição",
+        "help": "Uma posição dos dedos tem de se manter este tempo para contar (sem saltos entre posições). Uma mudança do polegar espera 1,5 × isto."
+      },
+      "handTap": {
+        "label": "O toque do dedo clica",
+        "help": "Dobre o dedo indicador e estique-o depressa para premir o botão sob o cursor (também confirma Limpar)."
+      },
+      "waveMinSwing": {
+        "label": "Amplitude do aceno",
+        "help": "Cada movimento do aceno com a mão aberta tem de cobrir esta parte da imagem da câmara."
+      },
+      "waveWindowMs": {
+        "label": "Tempo do aceno",
+        "help": "Dois movimentos (esquerda → direita → esquerda) dentro deste tempo abrem Limpar Desenho."
+      },
+      "handPreview": {
+        "label": "Pré-visualização da câmara",
+        "help": "A pequena imagem da câmara, em cima à esquerda: a mão, a caixa de alcance (tracejada), quanto cada dedo parece estendido (barras: polegar … mindinho) e a posição. Tecla h."
       }
     },
     "language": {
@@ -488,6 +571,16 @@
       "cal5": "Calibrar · 5 pontos",
       "cal9": "Calibrar · 9 pontos",
       "help": "A suavização, a influência da cabeça, a frequência de dados, a duração do piscar longo e a câmara estão nas definições do seguimento ocular (Esc)."
+    },
+    "hands": {
+      "notRunning": "A câmara não está ligada (ligue-a no primeiro ecrã).",
+      "status": "Câmara a {fps} fps · modelo em {delegate}",
+      "reachDefault": "alcance predefinido",
+      "reachCustom": "o seu alcance calibrado",
+      "calibrate": "Calibrar o alcance",
+      "reset": "Alcance predefinido",
+      "resetDone": "Voltou o alcance predefinido.",
+      "help": "O alcance (a caixa tracejada na pré-visualização) é a parte da imagem da câmara que cobre o ecrã inteiro: calibre-o para cada lugar ou pessoa (tecla c). Posições: 1 dedo = fina · 2 = média · 3 = grossa · polegar de fora = 1–5 agentes · punho = repouso · mão aberta a acenar = Limpar Desenho."
     },
     "data": {
       "reset": "Repor todas as predefinições",

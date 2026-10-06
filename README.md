@@ -1,32 +1,34 @@
-# Inkwell 16 — gaze drawing studio
+# Inkwell 17 — gaze drawing studio (and its hand-gesture variant)
 
-**Draw with your eyes.** Inkwell is the gaze drawing studio of **[SiX — Drawing for Social Re-connectivity](https://six.fba.up.pt/)**
+**Draw with your eyes** — or, in 17d, with your hand. Inkwell is the gaze drawing studio of **[SiX — Drawing for Social Re-connectivity](https://six.fba.up.pt/)**
 (FBAUP · FCT 2023.11224.PEX, PI Eliana Penedos-Santiago), a research project on drawing as expression and social
 re-connection for people living with Locked-In Syndrome (LIS) or ALS, for whom the eyes may be the only reliable channel.
 [Credits](#credits).
 
-Build 16 continues *Gaze Draw* 12–15 under its new name and is one app in **three variants**:
+Build 17 is build 16.1 (*Gaze Draw* 12–15 under its new name) plus a fourth variant — **one app in four variants**:
 
 | Variant | Page | Input | Use it for |
 |---|---|---|---|
-| **16a · eye tracker** | `inkwell-16a-eyetracker.html` | webcam eye tracking with [InkGaze.js](lib/) (calibrated) | the main prototype |
-| **16b · mouse cursor** | `inkwell-16b-mouse-cursor.html` | the mouse pointer as the "gaze" (same dwell, same escape) | quick tests, demos |
-| **16c · cardboard** | `inkwell-16c-cardboard.html` | head orientation: a phone in a Cardboard viewer, a WebXR headset, or a desktop look-around preview | the 360° canvas in VR |
+| **17a · eye tracker** | `inkwell-17a-eyetracker.html` | webcam eye tracking with [InkGaze.js](lib/) (calibrated) | the main prototype |
+| **17b · mouse cursor** | `inkwell-17b-mouse-cursor.html` | the mouse pointer as the "gaze" (same dwell, same escape) | quick tests, demos |
+| **17c · cardboard** | `inkwell-17c-cardboard.html` | head orientation: a phone in a Cardboard viewer, a WebXR headset, or a desktop look-around preview | the 360° canvas in VR |
+| **17d · hand gestures** | `inkwell-17d-hand-gestures.html` | **one hand through the webcam** (MediaPipe hands): the index fingertip is the cursor, finger poses choose the line, the thumb calls drawing agents | caregivers and able-bodied participants, drawing in the same studio with the same menu |
 
-`index.html` lets you choose. Every variant keeps its **own** settings in the browser.
+`index.html` lets you choose. Every variant keeps its **own** settings in the browser (separate from build 16's).
 
-> **Status (October 2026).** 16b and the 16c preview were tested in a desktop browser (scripted gaze and head input).
-> 16a runs on InkGaze 2.1, tuned on two real webcam recordings of one user; 16a in a real session, 16c on a phone
-> (motion sensors, Cardboard lenses) and on a headset are **not yet tested on the devices**. See [Status and limits](#status-and-limits).
->
-> **16.1 (6 October 2026):** Clear Drawing no longer stalls the page, and its confirmation can no longer trap the eyes
-> (see the [CHANGELOG](CHANGELOG.md)).
+> **Status (October 2026).** 17a–17c are build 16.1 renamed (same code and behaviour, plus one engine guard, below).
+> 17b and the 17c preview were tested in a desktop browser (scripted gaze and head input). 17a runs on InkGaze 2.1,
+> tuned on two real webcam recordings of one user; 17a in a real session, 17c on a phone and on a headset are **not
+> yet tested on the devices**. **17d** was tested with synthetic hands (the pose classifier on 3D hand models at
+> several angles, and the whole app driven by scripted hand frames) and the hand model loads and runs in the browser
+> (GPU, ~7 ms a frame); it has **not yet been used with a real hand in front of a webcam**: the pose thresholds may need
+> tuning in a first session (the camera preview shows how each finger reads). See [Status and limits](#status-and-limits).
 
 ---
 
 ## Contents
 
-- [For users](#for-users): requirements · the first screens · the menu · drawing · options · configuration · cursor · languages · VR · helpers' keys · privacy
+- [For users](#for-users): requirements · the first screens · the menu · drawing · **hand gestures (17d)** · options · configuration · cursor · languages · VR · helpers' keys · privacy
 - [For developers and researchers](#for-developers-and-researchers): run · architecture · input · settings · sessions · languages · tests
 - [Research defaults](#research-defaults) · [Status and limits](#status-and-limits) · [Credits](#credits)
 
@@ -36,21 +38,25 @@ Build 16 continues *Gaze Draw* 12–15 under its new name and is one app in **th
 
 ### What you need
 
-- **16a:** a computer with a webcam, **Chrome, Edge or Safari**, light on your face from the front, about 50–70 cm from
+- **17a:** a computer with a webcam, **Chrome, Edge or Safari**, light on your face from the front, about 50–70 cm from
   the screen. The page must come from `https://` or `http://localhost` (browsers only allow the camera there).
-- **16b:** any recent browser and a mouse or trackpad.
-- **16c:** a phone (Android Chrome or iOS Safari) in a **Cardboard** viewer — or a WebXR headset — served over
+- **17b:** any recent browser and a mouse or trackpad.
+- **17c:** a phone (Android Chrome or iOS Safari) in a **Cardboard** viewer — or a WebXR headset — served over
   `https://` (motion sensors and WebXR need a secure page). On a computer, *Look-around preview* works with the mouse.
+- **17d:** a computer with a webcam, Chrome, Edge or Safari, `https://` or `http://localhost`, and light on your hand.
+  Sit about an arm's length from the camera; one hand in view (the other may rest).
 
 ### The first screens
 
-1. **16a:** InkGaze's settings open first. Press **Start** (or **Resume** if you calibrated before) and look at each dot
+1. **17a:** InkGaze's settings open first. Press **Start** (or **Resume** if you calibrated before) and look at each dot
    until its circle closes — 5 dots by default, 9 for the best fit. A saved calibration only needs a quick check.
-   **16b / 16c:** press **Start**.
+   **17b / 17c:** press **Start**. **17d:** press **Start the camera** and allow it; show one hand and point with your
+   index finger. Then **Calibrate reach** (the first time; see below) or **Continue**.
 2. **Three dots** appear, centred vertically at the middle of the left third, the centre and the middle of the right
    third. Look at each one: it grows a little, a ring fills (0.8 s), it turns red and pops with a short chime.
 3. The **welcome screen**: the *inkwell* logo, the **play** button, **About**, **Help** and **Configurations** at the
-   bottom, and the **languages** at the top right. Everything works by looking (a dwell) or by a click.
+   bottom, and the **languages** at the top right. Everything works by looking (a dwell) or by a click (17d: by holding
+   the fingertip still, by a finger tap, or by a click).
 
 ### The menu (bottom)
 
@@ -79,11 +85,40 @@ that has just fired waits until you look away. Submenus open above their button;
    head flick faster than 160°/s). The line ends and the studio returns to rest (*Press to Draw* again for the next
    line). Looking at the menu also lifts the pen.
 
-There is no ink reservoir in build 16: a line lasts until you stop it.
+There is no ink reservoir (since build 16): a line lasts until you stop it.
 
 **Grid modes.** A lattice of dwell dots (3° apart). Dwell a dot to start, the next one to draw a straight segment;
 to stop, look away and dwell the last dot again, or make an escape saccade. *On* shows all dots, *feedback* lights a
 dot only while you look at it, *hidden* shows only the dot you aim at.
+
+### Hand gestures (17d)
+
+For a caregiver or an able-bodied participant: the same studio and menu, worked with **one hand** (right or left) in
+front of the webcam. The **index fingertip** is always the cursor, whatever the other fingers do.
+
+| Hand | What it does |
+|---|---|
+| **Index pointing** (the other fingers closed or half-closed, the thumb in) | **Draw mode on**, **thin line** (direct pen) |
+| **Index + middle** (ring and little finger closed) | **medium line** |
+| **Index + middle + ring** (little finger closed) | **thick line** |
+| **Hold the fingertip still** (0.8 s) | on the canvas: **start the line**, and again to **pause** it · on a button: **press it** (as the eyes do) |
+| **Finger tap** (curl the pointing finger and straighten it within ½ s) | a **click** on the button under the cursor (also *Clear* in the confirmation) |
+| **Thumb out** (an "L" with 1, 2 or 3 fingers) | **agents**: 1 to 5 drawing agents with random (always stable) settings draw with you at the same thickness — a new random set every time the thumb comes out |
+| **Thumb back in** | the line **pauses**, the agents go, the pen is direct again |
+| **Fist** | **rest**: the line stops, Draw mode off |
+| **Open hand, palm to the camera, waved** (left → right → left) | **Clear Drawing?** opens; confirm by pointing at *Clear* and holding still (1.2 s) or tapping; *Cancel* keeps the drawing |
+
+- **Only a pointing hand presses or inks**: a fist or an open hand moving over the menu never triggers it.
+- **Reach.** The part of the camera view that covers the whole screen (the dashed box in the camera preview) is set by
+  **Calibrate reach**: point and trace a large rectangle in the air for 5 seconds, as far as is comfortable — down to
+  where the menu is. Every corner, the menu and the pan edges are then reachable with the whole hand in view. Key `c`.
+- **The camera preview** (top left; key `h`, or Configuration) shows the hand, the reach box, five bars for how
+  extended each finger reads (thumb … little finger; red = counted as out) and the pose. Beside the cursor, a short
+  label confirms each new pose ("Medium Line · 3 agents", "fist · rest", "open hand · wave to clear").
+- After a dwell has started or paused the line, the fingertip must move a little before the next dwell counts, so
+  holding still never toggles the line on and off.
+- The cursor stays visible while drawing (the reason it hides for the eyes — they drift after it — does not apply to a
+  hand). There is no escape saccade in 17d.
 
 ### Options
 
@@ -91,7 +126,7 @@ dot only while you look at it, *hidden* shows only the dot you aim at.
   (1.2 s; a brief wobble is tolerated, looking away cancels it). To leave without choosing, look well away from the box
   for about a second. Undo can still bring the drawing back.
 - **Save Drawing** downloads a **PNG** of the canvas and a **JSON session** (the drawing, every setting, the agents and —
-  in 16a — your InkGaze calibration). A copy stays in this browser (the last 12).
+  in 17a — your InkGaze calibration; in 17d the reach). A copy stays in this browser (the last 12).
 - **Open Drawing** shows your recent drawings (look at one to open it) and **Load a file…** for a session JSON. Browsers
   only open a file dialog after a click or a tap, so that button needs one.
 - **Configuration** opens every setting (below).
@@ -103,23 +138,26 @@ Grouped in sections; every change is saved at once, for this variant only.
 - **Language** — the app's language, load a language file, download a template.
 - **Activation (the Midas touch)** — menu dwell (0.8 s), Clear dwell (1.2 s), exit grace (200 ms), target allowance
   (+50 % invisible hit area), **dwell on the canvas starts the line** (on / off) and its time, **dwell on the canvas stops
-  the line** (off), **escape saccade stops the line** (on), **… and switches Draw mode off** (on), escape size (16a/16b)
-  or head speed (16c), **long blink** starts / stops the line (16a, off), settle speed, dwell tolerance.
+  the line** (off; 17d: on), **escape saccade stops the line** (on; not in 17d), **… and switches Draw mode off** (on),
+  escape size (17a/17b) or head speed (17c), **long blink** starts / stops the line (17a, off), settle speed, dwell
+  tolerance.
 - **Cursor** — **show the cursor while drawing** (off), **show the cursor while paused** (on), cursor responsiveness.
-- **Line** — line option, thickness, colour, pixels per degree (16a/16b), the 1€-filter settings of each line option.
+- **Line** — line option, thickness, colour, pixels per degree (17a/17b/17d), the 1€-filter settings of each line option.
 - **Ink behaviour** — engorge, widest / thinnest speeds, drips, splats.
 - **Agents (boids)** — presets; add, remove, randomise or reset agents; each agent's speed, spring, damping, mass and
   jitter; the template for new agents. Default: one agent.
-- **Gaze amplification & assistive pan** (16a/16b) — amplification, edge-pan (off), comfort box, pan speed, canvas size.
+- **Gaze amplification & assistive pan** (17a/17b/17d) — amplification, edge-pan (off), comfort box, pan speed, canvas size.
 - **Grid mode** — dot spacing, size, jitter padding.
-- **VR** (16c) — stereo, head sensitivity, eye separation, lens distortion, field-of-view zoom, menu follow delay
+- **VR** (17c) — stereo, head sensitivity, eye separation, lens distortion, field-of-view zoom, menu follow delay
   (350 ms) and time, menu height, inverted aim.
-- **Eye tracker** (16a) — status, InkGaze settings, recentre, calibrate with 5 or 9 dots.
+- **Eye tracker** (17a) — status, InkGaze settings, recentre, calibrate with 5 or 9 dots.
+- **Hand gestures** (17d) — camera status, **Calibrate reach**, **Default reach**, fingertip smoothing (1€), pose hold
+  (120 ms), finger tap on / off, wave size (10 % of the view) and time (1.6 s), camera preview on / off.
 - **Settings** — reset to defaults, clear the saved settings, About, Help, the start screen.
 
 ### The cursor
 
-As in the HTC Vive app, the cursor **hides while you draw** — a visible cursor invites the eyes to follow it and drift.
+As in the HTC Vive app, the cursor **hides while you draw** (17a–17c; 17d keeps it) — a visible cursor invites the eyes to follow it and drift.
 The ink shows where the pen is. While paused (Draw off, after an escape or a dwell stop) the cursor is a **dashed
 light-grey circle**; when Draw is on and waiting for your dwell it has a small red centre dot. Both are switchable in
 Configuration → Cursor.
@@ -131,7 +169,7 @@ English (default) and **Portuguese** are included; choose on the welcome screen 
 texts (keep the keys, the `{placeholders}` and the HTML tags), then *Load a language file…* — it stays in this browser.
 Or add the file to `i18n/` and list it in `i18n/languages.json` so everyone gets it. The InkGaze window is in English.
 
-### VR (16c)
+### VR (17c)
 
 - **Start (this phone)** asks for the motion sensors (iOS), goes full screen and to landscape. Put the phone in the
   viewer: your head aims at the centre of the view.
@@ -145,14 +183,16 @@ Or add the file to `i18n/` and list it in `i18n/languages.json` so everyone gets
 ### Helpers' keys (keyboard / Wiimote controller layer of build 15)
 
 `q` pen down / up · `w` `s` thickness · `a` `d` line option · `o` `l` colour · `k` (or `z`) undo · `ç` (or `y`) redo ·
-`e` twice clear · `g` grid mode · `i` / `p` 3D view on / off (16a/16b) · `r` recentre the canvas (16c: the view) ·
-`c` recentre the eye tracker (16a) · `f` full screen · `Esc` close (16a: otherwise the eye-tracker settings).
-In 16b a click on the canvas starts / stops the line; clicks on the menu act at once.
+`e` twice clear · `g` grid mode · `i` / `p` 3D view on / off (17a/17b/17d) · `r` recentre the canvas (17c: the view) ·
+`c` recentre the eye tracker (17a) or calibrate the reach (17d) · `h` camera preview (17d) · `f` full screen · `Esc`
+close (17a: otherwise the eye-tracker settings). In 17b and 17d a click on the canvas starts / stops the line; clicks on
+the menu act at once.
 
 ### Privacy
 
-The camera image never leaves the device (InkGaze runs the face model locally). Settings, calibrations and recent
-drawings stay in this browser; files are only written when you press *Save Drawing*.
+The camera image never leaves the device (InkGaze runs the face model locally; 17d runs the hand model locally).
+MediaPipe is pinned to 0.10.35, which sends no usage telemetry. Settings, calibrations and recent drawings stay in this
+browser; files are only written when you press *Save Drawing*.
 
 ---
 
@@ -167,53 +207,79 @@ python3 -m http.server 8000
 ```
 
 ES modules and the camera need `http://localhost` or `https://`; phones need `https://` (see `../serve-https.sh` in the
-hub). 16c loads **three.js 0.160.0** from jsDelivr through an import map; 16a/16b load `lib/inkgaze.js` (InkGaze 2.1).
+hub). 17c loads **three.js 0.160.0** from jsDelivr through an import map; 17a/17b load `lib/inkgaze.js` (InkGaze 2.1);
+17d loads **MediaPipe Tasks Vision 0.10.35** (`vision_bundle.mjs` + WebAssembly, jsDelivr) and the *hand_landmarker*
+float16 model (Google storage) when the camera starts.
 
 ### Architecture
 
 | File | Role |
 |---|---|
-| `js/main.js` | bootstrap: loads the language, then the 2D app (16a/16b) or the VR app (16c) |
+| `js/main.js` | bootstrap: loads the language, then the 2D app (17a/17b/17d) or the VR app (17c) |
 | `js/core.js` | variants, design tokens, **defaults**, per-variant settings storage, maths, the 1€ filter, the agent (boid), the chime |
 | `js/engine.js` | the shared drawing engine: Draw mode, line start / stop (dwell, escape, blink), the escape re-arm guard, 1€ smoothing per line option, agents in 60 Hz steps, real-ink expression, grid mode, menu dwell |
 | `js/hud.js` | the 7-button menu: layout, hit-testing (hit areas grown by the target allowance, never overlapping), canvas rendering, submenus, the Clear / Open modals, the cursor |
 | `js/surface.js` | the drawing surface (tiles; a ring that wraps for VR) with **cell-based undo** (128-px cells, 24 steps) and dirty rectangles |
 | `js/ui.js` | DOM screens: gaze dwell for DOM elements (`GazeDom`), intro dots, gate, welcome screen, About, Help, Configuration, agents editor, language switcher, toasts |
-| `js/app2d.js` | 16a/16b runtime: InkGaze input, amplification / pan, rendering, clicks, keys, 3D analysis view, sessions |
-| `js/vr.js` | 16c runtime: three.js ring, following menu, 3D intro and welcome panels, head pose (sensors / WebXR / drag), stereo + normalised lens distortion, partial texture uploads |
+| `js/app2d.js` | 17a/17b/17d runtime: InkGaze input or the hand input (poses → Draw mode, thickness, agents, rest, wave → Clear, tap → click; the reach), amplification / pan, rendering, clicks, keys, 3D analysis view, sessions |
+| `js/hands.js` | 17d: `HandInput` (camera, MediaPipe HandLandmarker, one hand kept, the fingertip → screen through the reach box + 1€, the pose classifier with hysteresis and debounce, tap, wave, reach sweep, the camera preview) and `randomOrchestra()` (1–5 stable random agents) |
+| `js/vr.js` | 17c runtime: three.js ring, following menu, 3D intro and welcome panels, head pose (sensors / WebXR / drag), stereo + normalised lens distortion, partial texture uploads |
 | `js/sessions.js` | Save (PNG + JSON + IndexedDB copy) and Open |
 | `js/i18n.js`, `i18n/*.json` | languages |
 | `lib/inkgaze.js`, `lib/inkgaze.css` | InkGaze 2.1 (unchanged copy) |
 
 ### Input
 
-**16a** creates `new InkGaze({ storageKey: 'inkwell16.inkgaze', escapeAmplitude })` and calls `init()`: InkGaze's own
+**17a** creates `new InkGaze({ storageKey: 'inkwell17.inkgaze', escapeAmplitude })` and calls `init()`: InkGaze's own
 dialog takes over (calibration or resume), and its status `tracking` hands the stage to the app. The app listens to
 `data` (x, y, state, blinkMs → the cursor, the engine), `saccade` (`escape` → `engine.escape()`), `blink` (`long` →
 `engine.blink()`, opt-in), `status` (gate messages, pause) and `quality` (recentre hint). Completed menu dwells call
 `ig.learn(x, y)` at the target's centre, so the calibration improves where the menu is. During a saccade the pen target
 is held for up to 100 ms, so an escape never leaves a streak.
 
-**16b** runs InkGaze's **mouse source** (`source: 'mouse', ui: false, persist: false, smoothing: 0`): the pointer becomes
-the gaze with the same states, saccades and escapes. **16c** reads the head direction (DeviceOrientation, WebXR pose or
+**17b** runs InkGaze's **mouse source** (`source: 'mouse', ui: false, persist: false, smoothing: 0`): the pointer becomes
+the gaze with the same states, saccades and escapes. **17c** reads the head direction (DeviceOrientation, WebXR pose or
 drag) and computes the flick speed itself.
+
+**17d** (`hands.js`) opens the camera (640 × 480, 30 fps), runs **HandLandmarker** in VIDEO mode on every new frame
+(`requestVideoFrameCallback`; up to two hands, the one in use is kept; GPU with a CPU fallback; a warm-up inference while
+"Loading the hand model…" is shown) and keeps:
+
+- **the cursor**: the index fingertip (landmark 8), mirrored, mapped from the reach box `cfg.handBox` (default
+  x 0.18–0.82, y 0.12–0.66 of the view) to the screen, 1€-filtered in pixels (`handSmooth`);
+- **the pose**, from the 3D world landmarks (rotation- and distance-independent): each long finger's extension score
+  (bend at the middle and end joints, straightness, tip beyond the middle joint seen from the wrist; extended above
+  0.62, folded below 0.40, hysteresis in between) and the thumb's spread (tip ↔ index knuckle in palm lengths: out above
+  0.80, in below 0.64) → `point` 1/2/3 (+ thumb), `fist`, `palm`, `other`; a new pose counts after `poseStableMs`
+  (a thumb change 1.5 ×; a folding index first waits 0.52 s for a tap);
+- **tap**: while pointing, the index folds for ≥ 2 frames and straightens within 60–520 ms, the wrist still (< 5 % of
+  the view): a click where the fold began (the cursor holds there meanwhile);
+- **wave**: an open hand; a zig-zag on the palm's x — two swings of ≥ `waveMinSwing` within `waveWindowMs`.
+
+The app maps poses to the engine: a pointing onset → `setDrawMode(true)`; fingers → `setThickness`; thumb out →
+`spawnBoids(randomOrchestra())`, thumb in → `penUp` + no agents; fist → `penUp`, Draw off; wave → `openModal('clear')`;
+tap → the menu / modal action or `GazeDom.press()` on the screens. Only a pointing hand aims (`aiming()`): a fist or an
+open hand never dwells or inks. One engine change for all variants: after a canvas dwell fires, the cursor must move two
+dwell radii before the next one counts (with dwell-start and dwell-stop both on, holding still no longer toggles).
 
 The engine's per-frame input: `{ now, dt, hudId, overHud, surf: {x, y}, gazeDegS, blinkMs, lost }`.
 
 ### Settings
 
-`localStorage['inkwell16.<variant key>.settings']` = `{ schema: 1, version, savedAt, cfg }`, where `cfg` holds **only the
+`localStorage['inkwell17.<variant key>.settings']` = `{ schema: 1, version, savedAt, cfg }`, where `cfg` holds **only the
 values that differ from the defaults** (so a better default in a later build reaches returning users). The agents are
-stored as `cfg.agents`. The language is global: `localStorage['inkwell16.lang']`; loaded language files:
-`inkwell16.lang.custom`. InkGaze keeps its calibration under `inkwell16.inkgaze`.
+stored as `cfg.agents`; 17d's reach as `cfg.handBox`. The language is global: `localStorage['inkwell17.lang']`; loaded
+language files: `inkwell17.lang.custom`. InkGaze keeps its calibration under `inkwell17.inkgaze`. Build 17 never reads
+or changes build 16's keys (`inkwell16.*`), so both builds can be compared side by side.
 
 ### Session file
 
 `<variant key>_<timestamp>.json`:
 `{ format: 'inkwell-session', schema: 1, build, version, variant, savedAt, settings, state: { lineMode, thickness, color,
-gridMode, boids[] }, calibration (InkGaze exportCalibration(), 16a), drawing: { width, height, wrap, png }, credits }`.
+gridMode, boids[] }, calibration (InkGaze exportCalibration(), 17a), drawing: { width, height, wrap, png }, credits }`.
 Opening restores the settings (keeping hardware-specific ones when the variant differs), the agents, the drawing (fitted
-to the canvas) and, in 16a, the calibration (`importCalibration`; a recentre is advised).
+to the canvas) and, in 17a, the calibration (`importCalibration`; a recentre is advised). The sessions database is
+`inkwell-17` (IndexedDB).
 
 ### Languages
 
@@ -226,12 +292,19 @@ to the canvas) and, in 16a, the calibration (`importCalibration`; a recentre is 
 `window.inkwell` exposes the state. In a hidden tab (no `requestAnimationFrame`), drive frames on a virtual clock:
 
 ```js
-inkwell.goStudio(); inkwell.testMode();          // 16a/16b: stop live input
+inkwell.goStudio(); inkwell.testMode();          // 17a/17b: stop live input
 inkwell.inject(300, 200); inkwell.step(60);      // one second of gaze at (300, 200)
 inkwell.engine.S.penDown                          // → true after a dwell, with Draw mode on
-// 16c
+// 17c
 await inkwell.goStudio(); inkwell.look(20, 10); inkwell.step(60); inkwell.hudTarget('btn:draw');
+// 17d: no camera — the tracker as if running, then hand frames (every 33 ms of hand time) between app frames
+const hands = await inkwell.handTest(); inkwell.goStudio();
+hands.inject({ pose: 'point', n: 2, thumb: true, x: 500, y: 300 }, t);   // or hands.feed(handLandmarkerResult, t)
+inkwell.step(2, 16.5);
 ```
+
+`hands.js` exports the pure parts for unit tests: `classify(landmarks)`, `fingerExtension`, `thumbSpread`, `poseOf`,
+`WaveDetector`, `boxFrom`, `randomOrchestra`, `agentStable`.
 
 ---
 
@@ -251,15 +324,26 @@ From the project's *Research & Practice Dossier* (§7.7–§7.10) and the HTC Vi
 | Thickness | 0.18° / 0.40° / 0.90° | visual-angle steps inside sharp central vision (dossier §7.8) |
 | Cursor | hidden while drawing; dashed when paused | the HTC Vive app: a visible cursor makes the eyes drift after it |
 | Intro dots | 64 px (+ hit area ≥ 1.6°) | the top of the requested 48–64 px: webcam gaze is accurate to ~2–4° |
-| Agents | 1 | the pen has weight and inertia; more in Configuration |
+| Agents | 1 (17d: none until the thumb comes out) | the pen has weight and inertia; more in Configuration |
+| 17d line toggle | dwell starts **and** pauses the line (0.8 s) | "pause to toggle" — the hand, unlike the eyes, can hold still without staring |
+| 17d pose hold | 120 ms (thumb 180 ms) | no flicker between poses; agents are not re-randomised by a wobbling thumb |
 
 ## Status and limits
 
-- **Tested:** 16b end to end and the 16c desktop preview (scripted input in a browser): dwell, menus, Clear modal,
+- **Tested:** 17b end to end and the 17c desktop preview (scripted input in a browser): dwell, menus, Clear modal,
   undo, escape, the re-arm guard, grid mode, languages, configuration, the ring, the seam, the following menu, stereo
   with and without lens distortion (no cropping), partial texture uploads.
-- **Not yet tested on devices:** 16a with a real webcam session in Inkwell (InkGaze itself was tuned on two recordings);
-  16c on a phone in a Cardboard viewer and on a WebXR headset.
+- **17d, tested without a camera:** the pose classifier on synthetic 3D hands (11 poses × 4 hand angles, all correct);
+  the whole app driven by scripted hand frames (pointing → Draw on + thin, 2 / 3 fingers → medium / thick while
+  drawing, dwell start and pause, no re-toggle while still, thumb → 1–5 agents inking and a new set each time, thumb in
+  → pause + direct, fist → rest, slow open-hand moves → no wave, a wave → Clear, confirmed by dwell, Cancel and menu
+  buttons by tap, the reach sweep, the gate states, Configuration); 6 000 random agents, all stable; the hand model
+  loads (GPU) and runs at ~7 ms a frame after a warm-up.
+- **Not yet tested on devices:** 17a with a real webcam session in Inkwell (InkGaze itself was tuned on two recordings);
+  17c on a phone in a Cardboard viewer and on a WebXR headset; **17d with a real hand**. The thresholds of the
+  classifier (finger extension 0.62 / 0.40, thumb spread 0.80 / 0.64) come from hand anatomy and synthetic hands: watch
+  the five bars in the camera preview during a first session and adjust in `hands.js` (`THRESH`) if a pose misreads.
+  "Palm to the camera" is not checked (any open hand waved counts); the Clear confirmation keeps a wrong wave harmless.
 - The InkGaze window is English only. Phone performance of the 360° ring (8 textures of 675 × 1125 px) is untested.
 
 ## Credits
@@ -280,7 +364,7 @@ Portelinha, Manuel Silva, Vasco Praça. **Partners:** APELA · ADITGAMES · i3S 
 - **From the [SiX](https://six.fba.up.pt/) VR application:** settings and interaction decisions tested by Manuel Silva in the
   HTC Vive Focus Vision app (Unity) — for example, the hidden drawing cursor and the Clear confirmation.
 - **Web prototype:** directed by Pedro Amado. Code written with AI models: Google Gemini 2.5 Pro and 3.1 Pro (first
-  builds) and Anthropic Claude Opus 5.5 (the full code of Inkwell 16 and InkGaze.js).
+  builds) and Anthropic Claude Opus 5.5 (the full code of Inkwell 16–17 and InkGaze.js).
 - **InkGaze.js:** concept and design by Pedro Amado; development by Claude Opus 5.5 (October 2026).
 
 On the welcome screen: *A prototype of the [SiX research project](https://six.fba.up.pt/) · PI Eliana Penedos and the SiX
@@ -292,7 +376,7 @@ team · Interface, expressive line and drawing agents by Pedro Amado · code wri
 |---|---|---|
 | 0.1–0.9 and the WebGazer baselines | February – mid-May 2026 | Google Gemini 2.5 Pro and 3.1 Pro |
 | 04–15 | May – August 2026 | Anthropic Claude Opus 4.8 and Claude Fable 5 |
-| InkGaze.js 2 and Inkwell 16 | October 2026 | Anthropic Claude Opus 5.5 |
+| InkGaze.js 2 and Inkwell 16–17 | October 2026 | Anthropic Claude Opus 5.5 |
 
 All directed by Pedro Amado. AI models are credited as tools: authorship stays with the people credited above.
 
@@ -306,7 +390,8 @@ options from builds 11–12 (`webxr-eyegaze-11/`, `gaze-draw-12/`, July 2026).
 
 ### Third-party
 
-three.js (MIT) · MediaPipe Tasks Vision (Apache-2.0, through InkGaze) · fonts: JetBrains Mono, Hanken Grotesk, Bricolage
+three.js (MIT) · MediaPipe Tasks Vision and the hand landmarker model (Apache-2.0; through InkGaze, and directly in
+17d) · fonts: JetBrains Mono, Hanken Grotesk, Bricolage
 Grotesque (Google Fonts, OFL).
 
 **Funding.** This work is financed by national funds through the Portuguese funding agency, FCT — Fundação para a

@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// INKWELL 16 — bootstrap: one app, three variants (16a eye tracker · 16b mouse cursor · 16c cardboard)
+// INKWELL 17 — bootstrap: one app, three variants (17a eye tracker · 17b mouse cursor · 17c cardboard)
 // ═══════════════════════════════════════════════════════════════════════════
 import { VARIANTS } from './core.js';
 import { initI18n } from './i18n.js';

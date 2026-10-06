@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// INKWELL 16 — drawing engine (shared by 16a / 16b / 16c)
+// INKWELL 17 — drawing engine (shared by 17a / 17b / 17c)
 //
 //   Two levels of state (dossier §7.10: "arm, then act"):
 //     Draw mode   the central menu button: Press to Draw ⇄ Press to Pause (the pencil on / off the desk)
 //     The line    while Draw mode is on: starts with a DWELL on the canvas (or at once, if that toggle is off), stops
-//                 with the ESCAPE SACCADE (default), a dwell (off by default), a long blink (16a, off by default), or by
+//                 with the ESCAPE SACCADE (default), a dwell (off by default), a long blink (17a, off by default), or by
 //                 looking at the menu. No ink reservoir (v16): a line lasts until it is stopped.
 //   The pen     gaze → (amplification, pan: 2D) → 1€ filter per line option (in degrees) → agents (boids, default 1)
 //                or the direct pen (0 agents) → real-ink expression (speed → width, engorge, drips, splats; Rigid =
@@ -102,7 +102,7 @@ export class Engine {
   toggleDraw() {
     this.S.drawMode = !this.S.drawMode;
     this.penUp('toggle'); this.endGridLine();
-    this.S.cdwell.t = 0; this.S.autoArmT = null; this.S.rearm = null;
+    this.S.cdwell.t = 0; this.S.cdwell.leaveAt = null; this.S.autoArmT = null; this.S.rearm = null;
     this.flash(); this._log(this.S.drawMode ? 'draw-on' : 'draw-off');
   }
   setDrawMode(on) { if (!!on !== this.S.drawMode) this.toggleDraw(); }
@@ -122,7 +122,7 @@ export class Engine {
     this._log('line-stop', reason);
   }
   _liftAll() { for (const b of this.S.boids) b.last = null; this.S.pen.last = null; }
-  // the escape saccade (16a / 16b: InkGaze events; 16c: head flick). Only while a line is being drawn (the jump from
+  // the escape saccade (17a / 17b: InkGaze events; 17c: head flick). Only while a line is being drawn (the jump from
   // the menu to the canvas after Press to Draw is also a large saccade). Default: the line ends AND Draw mode goes back
   // to rest ("escape the drawing mode off"); with escapePauses off, Draw mode stays armed but the escape's landing point
   // cannot start the next line (the gaze must travel on first: no Midas touch where the eyes happened to land).
@@ -136,7 +136,7 @@ export class Engine {
     this.flash();
     return true;
   }
-  // a long (deliberate) blink toggles the line (16a, opt-in)
+  // a long (deliberate) blink toggles the line (17a, opt-in)
   blink(b) {
     if (!this.cfg.blinkToggle || !b || !b.long || !this.S.drawMode || this.S.overHud || this.gridMode) return false;
     if (this.S.penDown) { this.penUp('blink'); if (!this.cfg.dwellStart) this.toggleDraw(); } else this.penDown();
@@ -267,6 +267,9 @@ export class Engine {
     }
     const wantDwell = !S.penDown ? cfg.dwellStart : cfg.dwellStop;
     if (!wantDwell) { C.t = 0; return; }
+    // 17: a canvas dwell that just fired needs the cursor to move away (2 radii) before the next one counts — with both
+    // dwell-start and dwell-stop on (17d), holding still no longer toggles the line on and off every 0.8 s
+    if (C.leaveAt) { if (Math.hypot(p.x - C.leaveAt.x, p.y - C.leaveAt.y) > 2 * R) C.leaveAt = null; else { C.t = 0; return; } }
     if (S.penDown && !C.armedMove) {              // stopping needs the gaze to have travelled since the line began
       if (C.anchor && Math.hypot(p.x - C.anchor.x, p.y - C.anchor.y) > 2 * R) C.armedMove = true;
       if (!C.anchor) C.anchor = { x: p.x, y: p.y };
@@ -278,7 +281,7 @@ export class Engine {
     else if (now - C.lastIn > cfg.graceMs) { C.t = 0; if (!settled) C.anchor = { x: p.x, y: p.y }; }
     const need = cfg.canvasDwellMs;
     if (C.t >= need) {
-      C.t = 0; C.anchor = { x: p.x, y: p.y };
+      C.t = 0; C.anchor = { x: p.x, y: p.y }; C.leaveAt = { x: p.x, y: p.y };
       if (!S.penDown) this.penDown();
       else { this.penUp('dwell'); if (!cfg.dwellStart) this.toggleDraw(); }
       if (this.hooks.onDwellDone) this.hooks.onDwellDone('canvas');

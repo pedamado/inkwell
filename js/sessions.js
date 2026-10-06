@@ -1,13 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// INKWELL 16 — drawing sessions: Save (PNG + JSON) and Open (recent drawings in this browser, or a JSON file)
+// INKWELL 17 — drawing sessions: Save (PNG + JSON) and Open (recent drawings in this browser, or a JSON file)
 //   Session JSON: the drawing (PNG data URL), every app setting, the line / colour / grid selections, the agents and
-//   (16a) the user's InkGaze calibration — so a session can be resumed exactly.
+//   (17a) the user's InkGaze calibration — so a session can be resumed exactly.
 //   Every save is also kept in IndexedDB (the last 12 per variant): "Open Drawing" lists them as gaze-dwell targets,
 //   because browsers only open a file dialog on a real click / tap (never on a dwell).
 // ═══════════════════════════════════════════════════════════════════════════
 import { VERSION, BUILD } from './core.js';
 
-const DB = 'inkwell-16', STORE = 'sessions', KEEP = 12;
+const DB = 'inkwell-17', STORE = 'sessions', KEEP = 12;
 
 function stamp(d = new Date()) { return d.toISOString().slice(0, 19).replace(/[:]/g, '-'); }
 function download(blob, name) {
@@ -56,7 +56,7 @@ export async function saveSession({ variant, cfg, engine, surface, inkgaze }) {
     format: 'inkwell-session', schema: 1, build: BUILD, version: VERSION, variant: variant.id, savedAt: when.toISOString(),
     settings: JSON.parse(JSON.stringify(cfg)), state: engine.serialize(), calibration,
     drawing: { width: surface.width, height: surface.height, wrap: surface.wrap, png: pngUrl },
-    credits: 'Inkwell 16 — a prototype of the SiX research project (FBAUP · FCT 2023.11224.PEX, https://six.fba.up.pt/), PI Eliana Penedos-Santiago and the SiX team. Interface, expressive line and drawing agents: Pedro Amado (FBAUP / i2ADS). Code written with Google Gemini and Anthropic Claude (Inkwell 16: Claude Opus 5.5).',
+    credits: 'Inkwell 17 — a prototype of the SiX research project (FBAUP · FCT 2023.11224.PEX, https://six.fba.up.pt/), PI Eliana Penedos-Santiago and the SiX team. Interface, expressive line and drawing agents: Pedro Amado (FBAUP / i2ADS). Code written with Google Gemini and Anthropic Claude (Inkwell 16–17: Claude Opus 5.5).',
   };
   const json = JSON.stringify(session);
   download(png, base + '.png');
@@ -95,7 +95,7 @@ export function parseSession(json) {
   return s;
 }
 // restore: settings (minus the variant's hardware-specific ones when the variant differs), selections, agents,
-// the drawing (fitted to this surface), and the InkGaze calibration (16a)
+// the drawing (fitted to this surface), and the InkGaze calibration (17a)
 export async function applySession(s, { variant, cfg, engine, surface, getSurface, inkgaze, applyCfg }) {
   const keepLocal = s.variant !== variant.id ? ['ppd', 'headGain', 'ipd', 'distort', 'vrZoom', 'invertX', 'invertY', 'flipH', 'flipV', 'escapeDegS', 'escapeAmplitude', 'cursorSmooth'] : [];
   const next = Object.assign({}, cfg, s.settings || {});

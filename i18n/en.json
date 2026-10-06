@@ -4,7 +4,7 @@
     "name": "English",
     "nativeName": "English",
     "dir": "ltr",
-    "version": "16.1.0",
+    "version": "17.0.0",
     "translators": "",
     "notes": "Reference language: it holds every key the app uses. To add a language, copy this file (e.g. es.json), set meta.code / meta.name / meta.nativeName, and translate the VALUES only: keep the keys, the {placeholders} and the HTML tags. Missing keys fall back to English. Then list the file in languages.json, or load it in the app: Configuration → Language → Load a language file."
   },
@@ -12,6 +12,7 @@
     "a": "eye tracker",
     "b": "mouse cursor",
     "c": "cardboard",
+    "d": "hand gestures",
     "title": "Inkwell {id} · {name}"
   },
   "common": {
@@ -38,12 +39,30 @@
       "calibrating": "Calibrating: look at each dot until its circle closes.",
       "paused": "The eye tracker is paused.",
       "closed": "The eye-tracker settings were closed without starting. Open them again to calibrate, or use the mouse version."
+    },
+    "hands": {
+      "intro": "Draw with one hand: the camera follows your index finger, and your fingers choose the line. Start the camera below and allow it — the image never leaves this device.",
+      "start": "Start the camera",
+      "retry": "Try again",
+      "calibrate": "Calibrate reach",
+      "continue": "Continue",
+      "status": {
+        "camera": "Starting the camera… (allow it if the browser asks)",
+        "model": "Loading the hand model…",
+        "ready": "Show one hand to the camera, about an arm's length away, and point with your index finger.",
+        "tracking": "Hand found. Hold your fingertip still on a button to press it — or tap: curl the finger and straighten it. The first time, calibrate your reach.",
+        "denied": "The camera was not allowed. Allow it for this page (the camera icon in the address bar), then try again.",
+        "nocamera": "No camera was found. Connect one and try again, or use the mouse version.",
+        "insecure": "The camera needs a secure page: open this at http://localhost or over https://.",
+        "error": "The hand tracker could not start: {reason}"
+      }
     }
   },
   "intro": {
     "hintEyes": "Look at each dot until it pops",
     "hintPointer": "Point at each dot and wait until it pops",
     "hintHead": "Turn your head to each dot and wait until it pops",
+    "hintHand": "Point at each dot and hold still until it pops",
     "dot": "Dot {n}",
     "aria": "Warm-up: {hint}"
   },
@@ -62,6 +81,7 @@
     "a": "Webcam eye tracking with InkGaze.js — the main prototype.",
     "b": "The mouse plays the eyes: the same dwell and escape, for quick tests.",
     "c": "Your head aims: a 360° canvas on a phone in a Cardboard viewer, in a WebXR headset, or in a preview.",
+    "d": "Your hand draws: the webcam follows your index finger, finger poses set the line, the thumb calls the agents — for caregivers and able-bodied participants.",
     "open": "Open",
     "docs": "Documentation",
     "readme": "Read me",
@@ -118,7 +138,27 @@
   },
   "badge": {
     "faceLost": "Face not visible to the camera",
-    "tracker": "Eye tracker: {state}"
+    "tracker": "Eye tracker: {state}",
+    "handLost": "Show your hand to the camera"
+  },
+  "hand": {
+    "pose": {
+      "none": "no hand",
+      "fist": "fist",
+      "palm": "open hand",
+      "other": "—",
+      "point1": "1 finger",
+      "point2": "2 fingers",
+      "point3": "3 fingers",
+      "thumb": "thumb"
+    },
+    "chip": {
+      "direct": "{thickness} · direct",
+      "agent": "{thickness} · 1 agent",
+      "agents": "{thickness} · {n} agents",
+      "rest": "fist · rest",
+      "palm": "open hand · wave to clear"
+    }
   },
   "toast": {
     "libMissing": "InkGaze (lib/inkgaze.js) did not load.",
@@ -140,20 +180,21 @@
     "badFile": "This file is not a valid Inkwell session (JSON).",
     "language": "Language: {name}",
     "languageLoaded": "Language file loaded: {name} ({count} texts).",
-    "languageBad": "This is not an Inkwell language file: {reason}"
+    "languageBad": "This is not an Inkwell language file: {reason}",
+    "waveClear": "Clear the drawing? Point at Clear and hold still (or tap). Cancel keeps it."
   },
   "about": {
     "title": "About Inkwell",
     "html": [
       "<p class=\"lead\"><b>Inkwell</b> is the gaze drawing studio of <b><a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX — Drawing for Social Re-connectivity</a></b>, an exploratory research project of the Faculty of Fine Arts of the University of Porto (FBAUP) funded by FCT (2023.11224.PEX). SiX explores drawing as expression and social re-connection for people with partial to complete <b>Locked-In Syndrome</b> (LIS) — for whom the eyes may be the only reliable channel — through co-design with the Portuguese ALS Association (APELA).</p>",
       "<h3>Where this prototype comes from</h3>",
-      "<p>The line started as an EyeWriter-style experiment and grew through <i>GazeDraw</i> (a lattice of dwell dots), the WebXR <i>Gaze Draw</i> builds 12–15 (continuous ink, autonomous drawing agents, gaze amplification, a grid-assisted mode, a helper controller layer) to <b>Inkwell 16</b>. A first evaluation with able-bodied participants (2026) showed that, below a threshold of <i>correspondence</i> between intention and trace, gaze drawing collapses into pointing — so calibration and per-user tuning are preconditions for expression. Inkwell 16 answers with a calibrated webcam eye tracker, per-user settings, and alternatives to dwell (the escape saccade, the blink).</p>",
+      "<p>The line started as an EyeWriter-style experiment and grew through <i>GazeDraw</i> (a lattice of dwell dots), the WebXR <i>Gaze Draw</i> builds 12–15 (continuous ink, autonomous drawing agents, gaze amplification, a grid-assisted mode, a helper controller layer) to <b>Inkwell 16</b> and <b>17</b>. A first evaluation with able-bodied participants (2026) showed that, below a threshold of <i>correspondence</i> between intention and trace, gaze drawing collapses into pointing — so calibration and per-user tuning are preconditions for expression. Inkwell answers with a calibrated webcam eye tracker, per-user settings, and alternatives to dwell (the escape saccade, the blink).</p>",
       "<h3>What this web prototype is for</h3>",
-      "<p>A fast, open test bench for the <b>interaction design</b> of gaze drawing. One app, three variants: <b>16a</b> webcam eye tracker (the main one), <b>16b</b> mouse cursor (the same behaviours, for quick tests), <b>16c</b> Cardboard / VR head-mount with a 360° canvas — so ideas can be tried anywhere before they move to the project's main prototype.</p>",
+      "<p>A fast, open test bench for the <b>interaction design</b> of gaze drawing. One app, four variants: <b>17a</b> webcam eye tracker (the main one), <b>17b</b> mouse cursor (the same behaviours, for quick tests), <b>17c</b> Cardboard / VR head-mount with a 360° canvas, and <b>17d</b> hand gestures through the webcam, for caregivers and able-bodied participants, who draw in the same studio with the same menu — so ideas can be tried anywhere before they move to the project's main prototype.</p>",
       "<h3>The main SiX prototype</h3>",
       "<p>The SiX application for the <b>HTC Vive Focus Vision</b> (Unity, eye tracking in the headset) is the project's main prototype: built by the team led by <b>Eliana Penedos-Santiago</b> and developed by <b>Manuel Silva</b> (CITAR · Universidade Católica Portuguesa).</p>",
       "<h3>InkGaze.js</h3>",
-      "<p>An additional output of this work: <b>InkGaze.js</b>, a drop-in webcam eye-tracking library that refines the approach of browser trackers such as WebGazer for gaze-only drawing — 5- or 9-dot calibration with a shrinking bubble, head-movement compensation, a model that keeps learning from what you look at, and blink and saccade events. Inkwell 16a runs on it.</p>",
+      "<p>An additional output of this work: <b>InkGaze.js</b>, a drop-in webcam eye-tracking library that refines the approach of browser trackers such as WebGazer for gaze-only drawing — 5- or 9-dot calibration with a shrinking bubble, head-movement compensation, a model that keeps learning from what you look at, and blink and saccade events. Inkwell 17a runs on it.</p>",
       "<h3>Credits</h3>",
       "<p><b><a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX — Drawing for Social Re-connectivity</a></b> (FBAUP · FCT 2023.11224.PEX). This prototype exists within, and because of, the <a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX project</a>. <b>Principal Investigator:</b> Eliana Penedos-Santiago (ID+ · FBAUP). <b>Team:</b> Andreia Pinto de Sousa, Bruno Giesteira, Cláudia Lima, Pedro Amado, Sílvia Simões, Viviane Peçaibes. <b>Consultants:</b> Filipe Gonçalves (APELA), Miguel Alves-Ferreira (CGPP-IBMC / i3S). <b>Collaborators:</b> Lara Portelinha, Manuel Silva, Vasco Praça. <b>Partners:</b> APELA · ADITGAMES · i3S / IBMC · Fraunhofer AICOS.</p>",
       "<dl class=\"credits\">",
@@ -166,7 +207,7 @@
       "<dt>From the <a href=\"https://six.fba.up.pt/\" target=\"_blank\" rel=\"noopener\">SiX</a> VR application</dt>",
       "<dd>Settings and interaction decisions tested by Manuel Silva in the HTC Vive Focus Vision app (Unity) — for example, the hidden drawing cursor and the Clear confirmation.</dd>",
       "<dt>Web prototype</dt>",
-      "<dd>Directed by Pedro Amado. Code written with AI models: Google Gemini 2.5 Pro and 3.1 Pro (first builds) and Anthropic Claude Opus 5.5 (the full code of Inkwell 16 and InkGaze.js).</dd>",
+      "<dd>Directed by Pedro Amado. Code written with AI models: Google Gemini 2.5 Pro and 3.1 Pro (first builds) and Anthropic Claude Opus 5.5 (the full code of Inkwell 16–17 and InkGaze.js).</dd>",
       "<dt>InkGaze.js</dt>",
       "<dd>Concept and design by Pedro Amado; development by Claude Opus 5.5 (October 2026).</dd>",
       "<dt>Project</dt>",
@@ -181,9 +222,10 @@
     "html": [
       "<h3>Getting started</h3>",
       "<ul>",
-      "<li><b>16a · eye tracker</b> — the InkGaze settings open first: press <b>Start</b> and look at each dot until its circle closes (5 dots; 9 for the best fit). A saved calibration only needs a quick check. Then the app takes over.</li>",
-      "<li><b>16b · mouse cursor</b> — the same app and behaviours, driven by the pointer (no camera).</li>",
-      "<li><b>16c · cardboard</b> — on a phone in a Cardboard viewer (or a WebXR headset): your head aims. Turn around: the canvas is 360°.</li>",
+      "<li><b>17a · eye tracker</b> — the InkGaze settings open first: press <b>Start</b> and look at each dot until its circle closes (5 dots; 9 for the best fit). A saved calibration only needs a quick check. Then the app takes over.</li>",
+      "<li><b>17b · mouse cursor</b> — the same app and behaviours, driven by the pointer (no camera).</li>",
+      "<li><b>17c · cardboard</b> — on a phone in a Cardboard viewer (or a WebXR headset): your head aims. Turn around: the canvas is 360°.</li>",
+      "<li><b>17d · hand gestures</b> — the camera follows your index finger: press <b>Start the camera</b>, show one hand and (the first time) calibrate your reach. See <i>Hand gestures</i> below.</li>",
       "</ul>",
       "<h3>The first screen and the welcome screen</h3>",
       "<p>Look at each of the three dots until it turns red and pops (they grow a little while you look). Then <b>play</b> opens the studio; <b>About</b>, <b>Help</b> and <b>Configurations</b> are at the bottom, the languages at the top. Everything works by looking (a dwell, 0.8 s) or by a click.</p>",
@@ -202,21 +244,37 @@
       "<li><b>Press to Draw.</b></li>",
       "<li>Look where the line should begin and hold your gaze still: the ring around the cursor fills and the line starts (you can switch this dwell off in Configuration: then the line starts as soon as your gaze settles).</li>",
       "<li>Draw by moving your eyes. The agent (a small weighted pen) follows your gaze and lays the ink.</li>",
-      "<li>To stop, make a <b>quick, large look away</b> (the <i>escape saccade</i>): the line ends and the studio returns to rest. Optional: keep Draw on after an escape, stop with a dwell, or with a long blink (16a).</li>",
+      "<li>To stop, make a <b>quick, large look away</b> (the <i>escape saccade</i>): the line ends and the studio returns to rest. Optional: keep Draw on after an escape, stop with a dwell, or with a long blink (17a).</li>",
       "</ol>",
       "<h3>Agents, amplification, pan</h3>",
       "<p>By default one agent draws. Add, remove, randomise or tune agents in Configuration (speed, spring, damping, mass, jitter), or pick a preset. Gaze amplification makes small eye movements reach further; the assistive pan (off by default) scrolls a larger canvas when you reach its edge.</p>",
-      "<h3>VR (16c)</h3>",
+      "<h3>VR (17c)</h3>",
       "<p>Turn your head: the canvas wraps all around you. The menu waits a moment, then glides to stay below your eyes. Look down at it to use it; double-tap the screen to recentre.</p>",
+      "<h3>Hand gestures (17d)</h3>",
+      "<ul>",
+      "<li><b>Point with your index finger</b> (the other fingers closed, the thumb in): Draw mode turns on, <b>thin line</b>. The fingertip is the cursor; the dashed box in the camera preview is the part of the view that covers the screen.</li>",
+      "<li><b>Index + middle</b>: medium line. <b>Index + middle + ring</b>: thick line (the cursor stays on the index fingertip).</li>",
+      "<li><b>Hold your fingertip still</b> (0.8 s) to start the line, and again to pause it. Held still on a button, it presses it — as the eyes do. Or <b>tap</b>: curl the finger and straighten it quickly.</li>",
+      "<li><b>Thumb out</b> (an “L” with 1, 2 or 3 fingers): <b>agents</b> — 1 to 5 drawing agents with random settings draw with you, at the same thickness. <b>Thumb back in</b>: the line pauses, the agents go and the pen is direct again. Every new thumb-out brings a new random set.</li>",
+      "<li><b>Close your hand</b> (a fist): rest — the line stops and Draw mode goes off.</li>",
+      "<li><b>Open hand, palm to the camera, waved</b> (left → right → left): <i>Clear the whole drawing?</i> opens. Confirm by pointing at <i>Clear</i> and holding still (or tap); <i>Cancel</i> keeps the drawing.</li>",
+      "<li>Keys: <kbd>c</kbd> calibrate the reach · <kbd>h</kbd> camera preview on/off.</li>",
+      "</ul>",
       "<h3>Fine-tuning the Midas touch</h3>",
       "<p>In Configuration → Activation: the menu dwell (0.8 s), the canvas dwell, the exit grace, the target allowance (invisible extra hit area), the settle speed, and the escape size. If things fire by themselves, raise the dwell; if they feel slow, lower it.</p>",
       "<h3>Keyboard / controller (helpers)</h3>",
-      "<p><kbd>q</kbd> draw on/off · <kbd>w</kbd>/<kbd>s</kbd> thickness · <kbd>a</kbd>/<kbd>d</kbd> line option · <kbd>o</kbd>/<kbd>l</kbd> colour · <kbd>k</kbd>/<kbd>ç</kbd> undo/redo · <kbd>e</kbd>×2 clear · <kbd>g</kbd> grid · <kbd>i</kbd>/<kbd>p</kbd> 3D view on/off · <kbd>r</kbd> recentre the canvas · <kbd>c</kbd> recentre the eye tracker (16a) · <kbd>f</kbd> full screen · <kbd>Esc</kbd> close / eye-tracker settings.</p>",
+      "<p><kbd>q</kbd> draw on/off · <kbd>w</kbd>/<kbd>s</kbd> thickness · <kbd>a</kbd>/<kbd>d</kbd> line option · <kbd>o</kbd>/<kbd>l</kbd> colour · <kbd>k</kbd>/<kbd>ç</kbd> undo/redo · <kbd>e</kbd>×2 clear · <kbd>g</kbd> grid · <kbd>i</kbd>/<kbd>p</kbd> 3D view on/off · <kbd>r</kbd> recentre the canvas · <kbd>c</kbd> recentre the eye tracker (17a) or calibrate the reach (17d) · <kbd>h</kbd> camera preview (17d) · <kbd>f</kbd> full screen · <kbd>Esc</kbd> close / eye-tracker settings.</p>",
       "<h3>Languages</h3>",
       "<p>English and Portuguese are included. To add or correct a language, copy <code>i18n/en.json</code>, translate the texts, and load it in Configuration → Language (it stays in this browser), or add it to the <code>i18n</code> folder and to <code>languages.json</code>.</p>",
       "<h3>Privacy</h3>",
       "<p>The camera image never leaves your device. Settings and saved drawings stay in this browser unless you save files.</p>"
     ]
+  },
+  "reach": {
+    "title": "Calibrate your reach",
+    "hint": "Point with your index finger and trace a large rectangle in the air — as far left, right, up and down as is comfortable (down to where the menu will be). Keep your whole hand in view.",
+    "done": "Reach saved: your fingertip now covers the whole screen.",
+    "tooSmall": "The sweep was too small, so the previous reach is kept. Try again with larger movements."
   },
   "orbit": {
     "title": "3D analysis view · experimental",
@@ -249,6 +307,7 @@
       "grid": "Grid mode",
       "vr": "VR — Cardboard / headset",
       "tracker": "Eye tracker (InkGaze)",
+      "hands": "Hand gestures (camera)",
       "data": "Settings"
     },
     "items": {
@@ -440,6 +499,30 @@
       },
       "invertY": {
         "label": "Invert head aim (up / down)"
+      },
+      "handSmooth": {
+        "label": "Fingertip smoothing",
+        "help": "Steadies the cursor: 0 = raw, 1 = smoothest (more lag)."
+      },
+      "poseStableMs": {
+        "label": "Pose hold",
+        "help": "A finger pose must hold this long before it counts (no flicker between poses). A thumb change waits 1.5 × this."
+      },
+      "handTap": {
+        "label": "Finger tap clicks",
+        "help": "Curl the index finger and straighten it quickly to press the button under the cursor (it also confirms Clear)."
+      },
+      "waveMinSwing": {
+        "label": "Wave size",
+        "help": "Each swing of the open-hand wave must cover this share of the camera view."
+      },
+      "waveWindowMs": {
+        "label": "Wave time",
+        "help": "Two swings (left → right → left) within this time open Clear Drawing."
+      },
+      "handPreview": {
+        "label": "Camera preview",
+        "help": "The small camera view at the top left: the hand, the reach box (dashed), how extended each finger reads (bars: thumb … little finger) and the pose. Key h."
       }
     },
     "language": {
@@ -488,6 +571,16 @@
       "cal5": "Calibrate · 5 dots",
       "cal9": "Calibrate · 9 dots",
       "help": "Smoothing, head influence, data rate, long-blink length and camera are in the eye-tracker settings (Esc)."
+    },
+    "hands": {
+      "notRunning": "The camera is not running (start it on the first screen).",
+      "status": "Camera {fps} fps · model on {delegate}",
+      "reachDefault": "default reach",
+      "reachCustom": "your calibrated reach",
+      "calibrate": "Calibrate reach",
+      "reset": "Default reach",
+      "resetDone": "The default reach is back.",
+      "help": "The reach (the dashed box in the camera preview) is the part of the camera view that covers the whole screen: calibrate it for each seat or person (key c). Poses: 1 finger = thin · 2 = medium · 3 = thick · thumb out = 1–5 agents · fist = rest · open hand waved = Clear Drawing."
     },
     "data": {
       "reset": "Reset all to defaults",
